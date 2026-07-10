@@ -85,14 +85,14 @@ export default function PanelEstudiante() {
     <div>
       <AppHeader
         right={
-          <div className="flex items-center gap-3">
-            <div className="ls-body text-sm font-bold px-4 py-2 rounded-full flex items-center gap-1.5" style={{ background: C.resaltador, color: C.tinta }}>
+          <div className="flex items-center gap-1.5 sm:gap-3">
+            <div className="ls-body text-xs sm:text-sm font-bold px-2.5 sm:px-4 py-2 rounded-full flex items-center gap-1 sm:gap-1.5 whitespace-nowrap" style={{ background: C.resaltador, color: C.tinta }}>
               ⭐ {datos.puntos} pts
             </div>
-            <div className="w-10 h-10 rounded-full flex items-center justify-center ls-display font-bold" style={{ background: C.morado, color: "#fff" }}>
+            <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-full flex items-center justify-center ls-display font-bold shrink-0" style={{ background: C.morado, color: "#fff" }}>
               {datos.nombre?.charAt(0)?.toUpperCase() ?? "?"}
             </div>
-            <button onClick={salir} className="ls-btn ls-body text-xs font-semibold px-3 py-2 rounded-full" style={{ background: "#fff", color: C.gris, border: `2px solid ${C.borde}` }}>
+            <button onClick={salir} className="ls-btn ls-body text-xs font-semibold px-2.5 sm:px-3 py-2 rounded-full whitespace-nowrap" style={{ background: "#fff", color: C.gris, border: `2px solid ${C.borde}` }}>
               Salir
             </button>
           </div>
