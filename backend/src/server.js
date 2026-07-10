@@ -5,6 +5,7 @@ const cors = require("cors");
 const authRoutes = require("./routes/auth");
 const estudiantesRoutes = require("./routes/estudiantes");
 const actividadesRoutes = require("./routes/actividades");
+const docenteRoutes = require("./routes/docente");
 
 const app = express();
 
@@ -16,6 +17,7 @@ app.get("/api/health", (_req, res) => res.json({ ok: true }));
 app.use("/api/auth", authRoutes);
 app.use("/api/estudiantes", estudiantesRoutes);
 app.use("/api", actividadesRoutes);
+app.use("/api/docente", docenteRoutes);
 
 app.use((err, _req, res, _next) => {
   console.error(err);
