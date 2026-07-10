@@ -100,6 +100,7 @@ router.post("/actividades/:id/intentos", verifyToken, requireRole("estudiante"),
     correcto,
     puntosGanados,
     respuestaCorrecta: contenido.respuesta ?? null,
+    metadata,
     estudiante: { puntos: estudiante.puntos, nivel, puntosEnNivel, metaNivel, racha: estudiante.racha },
     logrosNuevos: logrosNuevos.map((l) => ({ codigo: l.codigo, nombre: l.nombre, icono: l.icono })),
   });
