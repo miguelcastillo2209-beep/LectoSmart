@@ -1,0 +1,45 @@
+@import url('https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;600;700;800&family=Inter:wght@400;500;600;700&display=swap');
+@import "tailwindcss";
+
+.ls-display {
+  font-family: 'Baloo 2', system-ui, sans-serif;
+}
+.ls-body {
+  font-family: 'Inter', system-ui, sans-serif;
+}
+
+/* Color del resaltador (#FFD84D) tomado de theme/colors.js -> C.resaltador */
+.ls-highlight {
+  background: linear-gradient(104deg, transparent 0.5%, #FFD84D 2.5%, #FFD84Ddd 96%, transparent 98%);
+  border-radius: 4px;
+  padding: 0 6px;
+  box-decoration-break: clone;
+}
+
+.ls-card {
+  transition: transform .15s ease, box-shadow .15s ease;
+}
+.ls-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 10px 24px rgba(30, 42, 74, .10);
+}
+
+.ls-btn {
+  transition: transform .1s ease, filter .15s ease;
+}
+.ls-btn:hover {
+  filter: brightness(1.06);
+}
+.ls-btn:active {
+  transform: scale(.97);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ls-card, .ls-btn {
+    transition: none;
+  }
+}
+
+body {
+  margin: 0;
+}
