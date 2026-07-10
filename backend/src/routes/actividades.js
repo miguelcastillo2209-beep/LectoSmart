@@ -44,6 +44,7 @@ router.get("/actividades/:id", verifyToken, requireRole("estudiante"), async (re
     id: actividad.id,
     modulo: actividad.modulo,
     titulo: actividad.titulo,
+    orden: actividad.orden,
     puntosBase: actividad.puntosBase,
     contenido: contenidoPublico(actividad),
   });
