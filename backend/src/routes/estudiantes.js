@@ -10,7 +10,7 @@ router.get("/me", verifyToken, requireRole("estudiante"), async (req, res) => {
   const estudiante = await prisma.estudiante.findUniqueOrThrow({ where: { id: req.usuario.id } });
 
   const [actividades, intentosCorrectos, catalogoLogros, logrosConseguidos] = await Promise.all([
-    prisma.actividad.findMany({ select: { id: true, modulo: true } }),
+    prisma.actividad.findMany({ where: { curso: estudiante.curso }, select: { id: true, modulo: true } }),
     prisma.intento.findMany({
       where: { estudianteId: estudiante.id, correcto: true },
       select: { actividadId: true },

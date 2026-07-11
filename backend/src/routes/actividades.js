@@ -14,10 +14,12 @@ router.get("/modulos/:modulo/actividades", verifyToken, requireRole("estudiante"
     return res.status(400).json({ error: "Módulo inválido" });
   }
 
+  const estudiante = await prisma.estudiante.findUniqueOrThrow({ where: { id: req.usuario.id } });
+
   const [actividades, intentosCorrectos] = await Promise.all([
-    prisma.actividad.findMany({ where: { modulo }, orderBy: { orden: "asc" } }),
+    prisma.actividad.findMany({ where: { modulo, curso: estudiante.curso }, orderBy: { orden: "asc" } }),
     prisma.intento.findMany({
-      where: { estudianteId: req.usuario.id, correcto: true, actividad: { modulo } },
+      where: { estudianteId: req.usuario.id, correcto: true, actividad: { modulo, curso: estudiante.curso } },
       select: { actividadId: true },
     }),
   ]);
@@ -35,9 +37,15 @@ router.get("/modulos/:modulo/actividades", verifyToken, requireRole("estudiante"
 });
 
 router.get("/actividades/:id", verifyToken, requireRole("estudiante"), async (req, res) => {
-  const actividad = await prisma.actividad.findUnique({ where: { id: req.params.id } });
+  const [actividad, estudiante] = await Promise.all([
+    prisma.actividad.findUnique({ where: { id: req.params.id } }),
+    prisma.estudiante.findUniqueOrThrow({ where: { id: req.usuario.id } }),
+  ]);
   if (!actividad) {
     return res.status(404).json({ error: "Actividad no encontrada" });
+  }
+  if (actividad.curso !== estudiante.curso) {
+    return res.status(403).json({ error: "Esta actividad no es de tu curso" });
   }
 
   res.json({
@@ -51,9 +59,15 @@ router.get("/actividades/:id", verifyToken, requireRole("estudiante"), async (re
 });
 
 router.post("/actividades/:id/intentos", verifyToken, requireRole("estudiante"), async (req, res) => {
-  const actividad = await prisma.actividad.findUnique({ where: { id: req.params.id } });
+  const [actividad, estudianteAntes] = await Promise.all([
+    prisma.actividad.findUnique({ where: { id: req.params.id } }),
+    prisma.estudiante.findUniqueOrThrow({ where: { id: req.usuario.id } }),
+  ]);
   if (!actividad) {
     return res.status(404).json({ error: "Actividad no encontrada" });
+  }
+  if (actividad.curso !== estudianteAntes.curso) {
+    return res.status(403).json({ error: "Esta actividad no es de tu curso" });
   }
 
   const contenido = JSON.parse(actividad.contenido);
@@ -77,7 +91,6 @@ router.post("/actividades/:id/intentos", verifyToken, requireRole("estudiante"),
   }
 
   const puntosGanados = correcto ? actividad.puntosBase : 0;
-  const estudianteAntes = await prisma.estudiante.findUniqueOrThrow({ where: { id: req.usuario.id } });
   const nuevaRacha = calcularRacha({
     rachaActual: estudianteAntes.racha,
     ultimaActividadEn: estudianteAntes.ultimaActividadEn,

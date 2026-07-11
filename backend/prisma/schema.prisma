@@ -37,6 +37,10 @@ model Docente {
 model Actividad {
   id         String   @id @default(cuid())
   modulo     String
+  // Grado al que está dirigida esta actividad (ver CURSOS en
+  // backend/src/lib/constants.js). Cada estudiante solo ve las
+  // actividades de su propio curso.
+  curso      String
   titulo     String
   // Estructura de "contenido" por módulo (JSON serializado como texto):
   //  PALABRAS:    { instruccion, opciones: [string], respuesta: string }
@@ -49,7 +53,7 @@ model Actividad {
 
   intentos Intento[]
 
-  @@unique([modulo, orden])
+  @@unique([modulo, curso, orden])
 }
 
 model Intento {

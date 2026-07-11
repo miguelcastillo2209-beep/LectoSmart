@@ -50,11 +50,27 @@ Guevara.
   intento, nunca en el cliente — evita que el frontend pueda "otorgarse"
   logros falsos.
 
-## Contenido de actividades
-- En esta fase el contenido (palabras, textos de comprensión, lecturas de
-  fluidez) es semilla fija (`backend/prisma/seed.js`), no hay CRUD docente
-  todavía. Al añadir actividades nuevas, seguir el formato de `contenido`
-  JSON documentado en el seed de cada módulo.
+## Cursos y contenido por grado
+- Cursos válidos: `6°, 7°, 8°, 9°, 10°, 11°` (`CURSOS` en
+  `backend/src/lib/constants.js`, duplicado a propósito en
+  `frontend/src/pages/Login.jsx` y `PanelDocente.jsx` — actualizar los tres
+  si cambia la lista).
+- Cada `Actividad` pertenece a un `curso` específico (además de su
+  `modulo`); un estudiante solo ve y puede resolver actividades de su
+  propio curso (`GET /modulos/:modulo/actividades` filtra por el curso del
+  token; `GET /actividades/:id` y `POST .../intentos` devuelven 403 si la
+  actividad no es de ese curso).
+- El contenido es semilla fija (`backend/prisma/seed.js`, objeto `BANCO`
+  organizado por curso → módulo → actividades), no hay CRUD docente
+  todavía. `puntosBase` es fijo por módulo (20/20/30) en todos los cursos;
+  la dificultad sube por el contenido, no por el puntaje.
+- El banco actual (4 actividades por módulo por curso) se redactó con
+  asistencia de IA siguiendo los Estándares Básicos de Competencias del
+  Lenguaje (MEN) para secundaria — **debe revisarse por las autoras o la
+  docente antes de usarse en un salón real**. Para ampliarlo, pedir un
+  lote nuevo con el mismo formato de `contenido` por módulo y la
+  progresión de dificultad por curso ya usada (ver historial de
+  conversación / commit que introdujo el banco por grado).
 
 ## Git / commits
 - Commits descriptivos en español, enfocados en el "por qué".

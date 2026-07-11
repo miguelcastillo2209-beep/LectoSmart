@@ -6,7 +6,7 @@ import { AppHeader } from "../components/AppHeader";
 import { apiFetch } from "../api/client";
 import { useAuth } from "../context/AuthContext";
 
-const CURSOS = ["3°", "5°", "7°", "9°"];
+const CURSOS = ["6°", "7°", "8°", "9°", "10°", "11°"];
 
 export default function Login() {
   const [modo, setModo] = useState("entrar");
@@ -113,7 +113,7 @@ export default function Login() {
           {modo === "registro" && (
             <label className="block mb-4">
               <span className="ls-body text-sm font-semibold" style={{ color: C.tinta }}>Tu curso</span>
-              <div className="grid grid-cols-4 gap-2 mt-1.5">
+              <div className="grid grid-cols-3 gap-2 mt-1.5">
                 {CURSOS.map((g) => (
                   <button
                     type="button"

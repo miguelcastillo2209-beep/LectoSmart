@@ -5,7 +5,7 @@ import { AppHeader } from "../components/AppHeader";
 import { apiFetch } from "../api/client";
 import { useAuth } from "../context/AuthContext";
 
-const CURSOS = ["3°", "5°", "7°", "9°"];
+const CURSOS = ["6°", "7°", "8°", "9°", "10°", "11°"];
 
 const colorComp = (v) => (v >= 70 ? C.verde : v >= 50 ? "#E8A13C" : C.coral);
 
