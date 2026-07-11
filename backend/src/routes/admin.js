@@ -3,6 +3,7 @@ const bcrypt = require("bcrypt");
 const prisma = require("../lib/prisma");
 const { verifyToken, requireRole } = require("../middleware/auth");
 const { CURSOS } = require("../lib/constants");
+const { normalizarUsuario } = require("../lib/usuario");
 
 const router = Router();
 router.use(verifyToken, requireRole("administrador"));
@@ -34,8 +35,9 @@ router.get("/estudiantes", async (_req, res) => {
 
 router.post("/estudiantes", async (req, res) => {
   try {
-    const { nombre, usuario, password, curso } = req.body ?? {};
-    if (!nombre?.trim() || !usuario?.trim() || !password || !curso) {
+    const { nombre, password, curso } = req.body ?? {};
+    const usuario = normalizarUsuario(req.body?.usuario);
+    if (!nombre?.trim() || !usuario || !password || !curso) {
       return res.status(400).json({ error: "Faltan campos obligatorios" });
     }
     if (!CURSOS.includes(curso)) {
@@ -43,11 +45,11 @@ router.post("/estudiantes", async (req, res) => {
     }
     const passwordHash = await hashSiVienePassword(password);
 
-    const existente = await prisma.estudiante.findUnique({ where: { usuario: usuario.trim() } });
+    const existente = await prisma.estudiante.findUnique({ where: { usuario } });
     if (existente) return res.status(409).json({ error: "Ese usuario ya existe" });
 
     const estudiante = await prisma.estudiante.create({
-      data: { nombre: nombre.trim(), usuario: usuario.trim(), passwordHash, curso },
+      data: { nombre: nombre.trim(), usuario, passwordHash, curso },
     });
     res.status(201).json(estudiante);
   } catch (err) {
@@ -57,12 +59,13 @@ router.post("/estudiantes", async (req, res) => {
 
 router.put("/estudiantes/:id", async (req, res) => {
   try {
-    const { nombre, usuario, password, curso } = req.body ?? {};
+    const { nombre, password, curso } = req.body ?? {};
+    const usuario = req.body?.usuario ? normalizarUsuario(req.body.usuario) : null;
     if (curso && !CURSOS.includes(curso)) {
       return res.status(400).json({ error: "Curso inválido" });
     }
     if (usuario) {
-      const enUso = await prisma.estudiante.findUnique({ where: { usuario: usuario.trim() } });
+      const enUso = await prisma.estudiante.findUnique({ where: { usuario } });
       if (enUso && enUso.id !== req.params.id) return res.status(409).json({ error: "Ese usuario ya existe" });
     }
     const passwordHash = await hashSiVienePassword(password);
@@ -71,7 +74,7 @@ router.put("/estudiantes/:id", async (req, res) => {
       where: { id: req.params.id },
       data: {
         ...(nombre && { nombre: nombre.trim() }),
-        ...(usuario && { usuario: usuario.trim() }),
+        ...(usuario && { usuario }),
         ...(curso && { curso }),
         ...(passwordHash && { passwordHash }),
       },
@@ -104,17 +107,18 @@ router.get("/docentes", async (_req, res) => {
 
 router.post("/docentes", async (req, res) => {
   try {
-    const { nombre, usuario, password } = req.body ?? {};
-    if (!nombre?.trim() || !usuario?.trim() || !password) {
+    const { nombre, password } = req.body ?? {};
+    const usuario = normalizarUsuario(req.body?.usuario);
+    if (!nombre?.trim() || !usuario || !password) {
       return res.status(400).json({ error: "Faltan campos obligatorios" });
     }
     const passwordHash = await hashSiVienePassword(password);
 
-    const existente = await prisma.docente.findUnique({ where: { usuario: usuario.trim() } });
+    const existente = await prisma.docente.findUnique({ where: { usuario } });
     if (existente) return res.status(409).json({ error: "Ese usuario ya existe" });
 
     const docente = await prisma.docente.create({
-      data: { nombre: nombre.trim(), usuario: usuario.trim(), passwordHash },
+      data: { nombre: nombre.trim(), usuario, passwordHash },
     });
     res.status(201).json(docente);
   } catch (err) {
@@ -124,9 +128,10 @@ router.post("/docentes", async (req, res) => {
 
 router.put("/docentes/:id", async (req, res) => {
   try {
-    const { nombre, usuario, password } = req.body ?? {};
+    const { nombre, password } = req.body ?? {};
+    const usuario = req.body?.usuario ? normalizarUsuario(req.body.usuario) : null;
     if (usuario) {
-      const enUso = await prisma.docente.findUnique({ where: { usuario: usuario.trim() } });
+      const enUso = await prisma.docente.findUnique({ where: { usuario } });
       if (enUso && enUso.id !== req.params.id) return res.status(409).json({ error: "Ese usuario ya existe" });
     }
     const passwordHash = await hashSiVienePassword(password);
@@ -135,7 +140,7 @@ router.put("/docentes/:id", async (req, res) => {
       where: { id: req.params.id },
       data: {
         ...(nombre && { nombre: nombre.trim() }),
-        ...(usuario && { usuario: usuario.trim() }),
+        ...(usuario && { usuario }),
         ...(passwordHash && { passwordHash }),
       },
     });
@@ -162,17 +167,18 @@ router.get("/administradores", async (_req, res) => {
 
 router.post("/administradores", async (req, res) => {
   try {
-    const { nombre, usuario, password } = req.body ?? {};
-    if (!nombre?.trim() || !usuario?.trim() || !password) {
+    const { nombre, password } = req.body ?? {};
+    const usuario = normalizarUsuario(req.body?.usuario);
+    if (!nombre?.trim() || !usuario || !password) {
       return res.status(400).json({ error: "Faltan campos obligatorios" });
     }
     const passwordHash = await hashSiVienePassword(password);
 
-    const existente = await prisma.administrador.findUnique({ where: { usuario: usuario.trim() } });
+    const existente = await prisma.administrador.findUnique({ where: { usuario } });
     if (existente) return res.status(409).json({ error: "Ese usuario ya existe" });
 
     const administrador = await prisma.administrador.create({
-      data: { nombre: nombre.trim(), usuario: usuario.trim(), passwordHash },
+      data: { nombre: nombre.trim(), usuario, passwordHash },
     });
     res.status(201).json(administrador);
   } catch (err) {
@@ -182,9 +188,10 @@ router.post("/administradores", async (req, res) => {
 
 router.put("/administradores/:id", async (req, res) => {
   try {
-    const { nombre, usuario, password } = req.body ?? {};
+    const { nombre, password } = req.body ?? {};
+    const usuario = req.body?.usuario ? normalizarUsuario(req.body.usuario) : null;
     if (usuario) {
-      const enUso = await prisma.administrador.findUnique({ where: { usuario: usuario.trim() } });
+      const enUso = await prisma.administrador.findUnique({ where: { usuario } });
       if (enUso && enUso.id !== req.params.id) return res.status(409).json({ error: "Ese usuario ya existe" });
     }
     const passwordHash = await hashSiVienePassword(password);
@@ -193,7 +200,7 @@ router.put("/administradores/:id", async (req, res) => {
       where: { id: req.params.id },
       data: {
         ...(nombre && { nombre: nombre.trim() }),
-        ...(usuario && { usuario: usuario.trim() }),
+        ...(usuario && { usuario }),
         ...(passwordHash && { passwordHash }),
       },
     });

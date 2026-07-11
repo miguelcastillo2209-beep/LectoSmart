@@ -3,6 +3,7 @@ const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 const prisma = require("../lib/prisma");
 const { CURSOS } = require("../lib/constants");
+const { normalizarUsuario } = require("../lib/usuario");
 
 const router = Router();
 
@@ -11,9 +12,10 @@ function firmarToken(payload) {
 }
 
 router.post("/estudiantes/registro", async (req, res) => {
-  const { nombre, usuario, password, curso } = req.body ?? {};
+  const { nombre, usuario: usuarioBruto, password, curso } = req.body ?? {};
+  const usuario = normalizarUsuario(usuarioBruto);
 
-  if (!nombre?.trim() || !usuario?.trim() || !password || !curso) {
+  if (!nombre?.trim() || !usuario || !password || !curso) {
     return res.status(400).json({ error: "Faltan campos obligatorios" });
   }
   if (password.length < 4) {
@@ -30,7 +32,7 @@ router.post("/estudiantes/registro", async (req, res) => {
 
   const passwordHash = await bcrypt.hash(password, 10);
   const estudiante = await prisma.estudiante.create({
-    data: { nombre: nombre.trim(), usuario: usuario.trim(), passwordHash, curso },
+    data: { nombre: nombre.trim(), usuario, passwordHash, curso },
   });
 
   const token = firmarToken({ id: estudiante.id, rol: "estudiante" });
@@ -41,7 +43,8 @@ router.post("/estudiantes/registro", async (req, res) => {
 });
 
 router.post("/estudiantes/login", async (req, res) => {
-  const { usuario, password } = req.body ?? {};
+  const { usuario: usuarioBruto, password } = req.body ?? {};
+  const usuario = normalizarUsuario(usuarioBruto);
   if (!usuario || !password) {
     return res.status(400).json({ error: "Faltan campos obligatorios" });
   }
@@ -59,7 +62,8 @@ router.post("/estudiantes/login", async (req, res) => {
 });
 
 router.post("/docentes/login", async (req, res) => {
-  const { usuario, password } = req.body ?? {};
+  const { usuario: usuarioBruto, password } = req.body ?? {};
+  const usuario = normalizarUsuario(usuarioBruto);
   if (!usuario || !password) {
     return res.status(400).json({ error: "Faltan campos obligatorios" });
   }
@@ -74,7 +78,8 @@ router.post("/docentes/login", async (req, res) => {
 });
 
 router.post("/administradores/login", async (req, res) => {
-  const { usuario, password } = req.body ?? {};
+  const { usuario: usuarioBruto, password } = req.body ?? {};
+  const usuario = normalizarUsuario(usuarioBruto);
   if (!usuario || !password) {
     return res.status(400).json({ error: "Faltan campos obligatorios" });
   }
