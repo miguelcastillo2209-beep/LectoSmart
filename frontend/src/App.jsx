@@ -5,8 +5,10 @@ import { RutaPrivada } from "./components/RutaPrivada";
 import Inicio from "./pages/Inicio";
 import Login from "./pages/Login";
 import LoginDocente from "./pages/LoginDocente";
+import LoginAdmin from "./pages/LoginAdmin";
 import PanelEstudiante from "./pages/PanelEstudiante";
 import PanelDocente from "./pages/PanelDocente";
+import PanelAdmin from "./pages/PanelAdmin";
 import ModuloPalabras from "./pages/ModuloPalabras";
 import ModuloComprension from "./pages/ModuloComprension";
 import ModuloFluidez from "./pages/ModuloFluidez";
@@ -20,6 +22,7 @@ export default function App() {
             <Route path="/" element={<Inicio />} />
             <Route path="/ingreso" element={<Login />} />
             <Route path="/ingreso-docente" element={<LoginDocente />} />
+            <Route path="/ingreso-admin" element={<LoginAdmin />} />
             <Route
               path="/panel"
               element={
@@ -55,8 +58,16 @@ export default function App() {
             <Route
               path="/docente"
               element={
-                <RutaPrivada rol="docente">
+                <RutaPrivada rol={["docente", "administrador"]}>
                   <PanelDocente />
+                </RutaPrivada>
+              }
+            />
+            <Route
+              path="/admin"
+              element={
+                <RutaPrivada rol="administrador">
+                  <PanelAdmin />
                 </RutaPrivada>
               }
             />

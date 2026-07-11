@@ -73,4 +73,19 @@ router.post("/docentes/login", async (req, res) => {
   res.json({ token, docente: { id: docente.id, nombre: docente.nombre } });
 });
 
+router.post("/administradores/login", async (req, res) => {
+  const { usuario, password } = req.body ?? {};
+  if (!usuario || !password) {
+    return res.status(400).json({ error: "Faltan campos obligatorios" });
+  }
+
+  const administrador = await prisma.administrador.findUnique({ where: { usuario } });
+  if (!administrador || !(await bcrypt.compare(password, administrador.passwordHash))) {
+    return res.status(401).json({ error: "Usuario o contraseña incorrectos" });
+  }
+
+  const token = firmarToken({ id: administrador.id, rol: "administrador" });
+  res.json({ token, administrador: { id: administrador.id, nombre: administrador.nombre } });
+});
+
 module.exports = router;

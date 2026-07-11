@@ -34,6 +34,17 @@ model Docente {
   createdAt    DateTime @default(now())
 }
 
+// Rol separado del docente: administra cuentas de estudiantes/docentes
+// desde el panel /admin, sin acceso al panel de seguimiento por sí solo
+// (aunque también puede verlo, ver requireRole en las rutas de docente).
+model Administrador {
+  id           String   @id @default(cuid())
+  nombre       String
+  usuario      String   @unique
+  passwordHash String
+  createdAt    DateTime @default(now())
+}
+
 model Actividad {
   id         String   @id @default(cuid())
   modulo     String

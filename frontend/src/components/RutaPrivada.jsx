@@ -5,7 +5,9 @@ export const RutaPrivada = ({ rol, children }) => {
   const { estaAutenticado, rol: rolActual } = useAuth();
 
   if (!estaAutenticado) return <Navigate to="/ingreso" replace />;
-  if (rol && rolActual !== rol) return <Navigate to="/" replace />;
+
+  const rolesPermitidos = Array.isArray(rol) ? rol : rol ? [rol] : null;
+  if (rolesPermitidos && !rolesPermitidos.includes(rolActual)) return <Navigate to="/" replace />;
 
   return children;
 };

@@ -6,7 +6,7 @@ import { AppHeader } from "../components/AppHeader";
 import { apiFetch } from "../api/client";
 import { useAuth } from "../context/AuthContext";
 
-export default function LoginDocente() {
+export default function LoginAdmin() {
   const [usuario, setUsuario] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState(null);
@@ -20,9 +20,9 @@ export default function LoginDocente() {
     setError(null);
     setCargando(true);
     try {
-      const data = await apiFetch("/auth/docentes/login", { method: "POST", body: { usuario, password } });
-      iniciarSesion({ token: data.token, rol: "docente", perfil: data.docente });
-      navigate("/docente");
+      const data = await apiFetch("/auth/administradores/login", { method: "POST", body: { usuario, password } });
+      iniciarSesion({ token: data.token, rol: "administrador", perfil: data.administrador });
+      navigate("/admin");
     } catch (err) {
       setError(err.message || "Ocurrió un error, intenta de nuevo");
     } finally {
@@ -36,10 +36,10 @@ export default function LoginDocente() {
       <div className="max-w-md mx-auto px-6 pt-6 pb-20">
         <div className="flex justify-center mb-4"><Leo size={90} /></div>
         <h1 className="ls-display text-3xl font-extrabold text-center" style={{ color: C.tinta }}>
-          Acceso docente
+          Acceso administrador
         </h1>
         <p className="ls-body text-center text-sm mt-2 mb-6" style={{ color: C.gris }}>
-          Ingresa con tu usuario institucional para ver el progreso de tus estudiantes.
+          Gestiona estudiantes, docentes y cuentas de administrador.
         </p>
 
         <form onSubmit={enviar} className="rounded-3xl p-6" style={{ background: "#fff", border: `2px solid ${C.borde}` }}>
@@ -77,17 +77,14 @@ export default function LoginDocente() {
             type="submit"
             disabled={cargando}
             className="ls-btn ls-display w-full text-lg font-bold py-3.5 rounded-2xl mt-2 disabled:opacity-60"
-            style={{ background: C.tinta, color: "#fff", boxShadow: "0 5px 0 #101a33" }}
+            style={{ background: C.morado, color: "#fff", boxShadow: "0 5px 0 #6D3FD1" }}
           >
             {cargando ? "Un momento…" : "Entrar"}
           </button>
         </form>
 
         <p className="ls-body text-center text-sm mt-6" style={{ color: C.gris }}>
-          ¿Eres estudiante? <Link to="/ingreso" style={{ color: C.azul, fontWeight: 600 }}>Ingresa aquí</Link>
-        </p>
-        <p className="ls-body text-center text-sm mt-2" style={{ color: C.gris }}>
-          ¿Eres administrador? <Link to="/ingreso-admin" style={{ color: C.azul, fontWeight: 600 }}>Ingresa aquí</Link>
+          ¿Eres docente? <Link to="/ingreso-docente" style={{ color: C.azul, fontWeight: 600 }}>Ingresa aquí</Link>
         </p>
       </div>
     </div>

@@ -7,6 +7,10 @@ const docentes = [
   { nombre: "Martha Bernal", usuario: "mbernal", password: "docente123" },
 ];
 
+const administradores = [
+  { nombre: "Administrador", usuario: "admin", password: "R0CK3T" },
+];
+
 const logros = [
   {
     codigo: "primera_lectura",
@@ -866,6 +870,15 @@ async function main() {
       where: { usuario: d.usuario },
       update: {},
       create: { nombre: d.nombre, usuario: d.usuario, passwordHash },
+    });
+  }
+
+  for (const a of administradores) {
+    const passwordHash = await bcrypt.hash(a.password, 10);
+    await prisma.administrador.upsert({
+      where: { usuario: a.usuario },
+      update: {},
+      create: { nombre: a.nombre, usuario: a.usuario, passwordHash },
     });
   }
 

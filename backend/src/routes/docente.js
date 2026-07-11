@@ -4,7 +4,7 @@ const { verifyToken, requireRole } = require("../middleware/auth");
 const { calcularNivel } = require("../services/puntos");
 
 const router = Router();
-router.use(verifyToken, requireRole("docente"));
+router.use(verifyToken, requireRole("docente", "administrador"));
 
 const UMBRAL_REFUERZO = 50;
 

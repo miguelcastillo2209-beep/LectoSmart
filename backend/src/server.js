@@ -6,6 +6,7 @@ const authRoutes = require("./routes/auth");
 const estudiantesRoutes = require("./routes/estudiantes");
 const actividadesRoutes = require("./routes/actividades");
 const docenteRoutes = require("./routes/docente");
+const adminRoutes = require("./routes/admin");
 
 const app = express();
 
@@ -18,6 +19,7 @@ app.use("/api/auth", authRoutes);
 app.use("/api/estudiantes", estudiantesRoutes);
 app.use("/api", actividadesRoutes);
 app.use("/api/docente", docenteRoutes);
+app.use("/api/admin", adminRoutes);
 
 app.use((err, _req, res, _next) => {
   console.error(err);

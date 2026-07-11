@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import { C } from "../theme/colors";
 import { AppHeader } from "../components/AppHeader";
 import { apiFetch } from "../api/client";
@@ -10,7 +10,7 @@ const CURSOS = ["6°", "7°", "8°", "9°", "10°", "11°"];
 const colorComp = (v) => (v >= 70 ? C.verde : v >= 50 ? "#E8A13C" : C.coral);
 
 export default function PanelDocente() {
-  const { perfil, cerrarSesion } = useAuth();
+  const { perfil, rol, cerrarSesion } = useAuth();
   const navigate = useNavigate();
 
   const [resumen, setResumen] = useState(null);
@@ -72,8 +72,17 @@ export default function PanelDocente() {
       <AppHeader
         right={
           <div className="flex items-center gap-2">
+            {rol === "administrador" && (
+              <Link
+                to="/admin"
+                className="ls-btn ls-body text-xs font-semibold px-3 py-2 rounded-full"
+                style={{ background: C.morado, color: "#fff" }}
+              >
+                Administrar usuarios
+              </Link>
+            )}
             <span className="ls-body text-sm font-semibold hidden md:block" style={{ color: C.gris }}>
-              Prof. {perfil?.nombre}
+              {rol === "administrador" ? perfil?.nombre : `Prof. ${perfil?.nombre}`}
             </span>
             <div className="w-10 h-10 rounded-full flex items-center justify-center ls-display font-bold" style={{ background: C.tinta, color: "#fff" }}>
               {perfil?.nombre?.charAt(0)?.toUpperCase() ?? "?"}

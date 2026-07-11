@@ -16,9 +16,9 @@ function verifyToken(req, res, next) {
   }
 }
 
-function requireRole(rol) {
+function requireRole(...rolesPermitidos) {
   return (req, res, next) => {
-    if (req.usuario?.rol !== rol) {
+    if (!rolesPermitidos.includes(req.usuario?.rol)) {
       return res.status(403).json({ error: "No autorizado" });
     }
     next();

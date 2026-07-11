@@ -53,8 +53,8 @@ Guevara.
 ## Cursos y contenido por grado
 - Cursos válidos: `6°, 7°, 8°, 9°, 10°, 11°` (`CURSOS` en
   `backend/src/lib/constants.js`, duplicado a propósito en
-  `frontend/src/pages/Login.jsx` y `PanelDocente.jsx` — actualizar los tres
-  si cambia la lista).
+  `frontend/src/pages/Login.jsx`, `PanelDocente.jsx` y `PanelAdmin.jsx` —
+  actualizar los cuatro si cambia la lista).
 - Cada `Actividad` pertenece a un `curso` específico (además de su
   `modulo`); un estudiante solo ve y puede resolver actividades de su
   propio curso (`GET /modulos/:modulo/actividades` filtra por el curso del
@@ -71,6 +71,27 @@ Guevara.
   lote nuevo con el mismo formato de `contenido` por módulo y la
   progresión de dificultad por curso ya usada (ver historial de
   conversación / commit que introdujo el banco por grado).
+
+## Roles y administración de usuarios
+- Tres roles con login separado: `estudiante` (`/ingreso`), `docente`
+  (`/ingreso-docente`) y `administrador` (`/ingreso-admin`), cada uno con
+  su propia tabla (`Estudiante`, `Docente`, `Administrador`) y su propio
+  JWT (`{ id, rol }`).
+- `administrador` es un rol aparte de `docente`, no una variante — un
+  docente normal no puede entrar a `/admin` ni llamar a `/api/admin/*`
+  (`requireRole` en `backend/src/middleware/auth.js` acepta varios roles;
+  las rutas de `/api/docente` aceptan `["docente","administrador"]`, las
+  de `/api/admin` solo `["administrador"]`).
+- El panel `/admin` (`frontend/src/pages/PanelAdmin.jsx` +
+  `backend/src/routes/admin.js`) reemplaza la necesidad de editar SQL
+  para gestión de cuentas: crear/editar/eliminar estudiantes, docentes y
+  administradores desde la interfaz. Al eliminar un estudiante se borran
+  también sus `Intento`/`EstudianteLogro` en la misma transacción. No se
+  puede eliminar la propia cuenta de administrador logueada ni el último
+  administrador restante (evita quedarse sin acceso de administración).
+- Cuenta de administrador sembrada por defecto: usuario `admin`,
+  contraseña `R0CK3T` (definida en `backend/prisma/seed.js` — cambiarla
+  ahí, o desde el propio panel `/admin`, antes de un uso real).
 
 ## Git / commits
 - Commits descriptivos en español, enfocados en el "por qué".
