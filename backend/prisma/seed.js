@@ -909,7 +909,74 @@ async function main() {
     }
   }
 
+  await crearVistasLegibles();
+
   console.log("Seed completado: docentes, logros y banco de actividades (6°-11°).");
+}
+
+// Vistas SQL de solo lectura, pensadas para explorar la base de datos en
+// DB Browser for SQLite con nombres en español en vez de los códigos
+// internos que usa el código de la aplicación (PALABRAS/COMPRENSION/
+// FLUIDEZ, 0/1, IDs). No las usa la app — son solo para inspección manual.
+async function crearVistasLegibles() {
+  const moduloLegible = (columna) => `
+    CASE ${columna}
+      WHEN 'PALABRAS' THEN 'Reconocer palabras'
+      WHEN 'COMPRENSION' THEN 'Comprensión lectora'
+      WHEN 'FLUIDEZ' THEN 'Fluidez lectora'
+      ELSE ${columna}
+    END`;
+
+  await prisma.$executeRawUnsafe(`DROP VIEW IF EXISTS ActividadesLegibles`);
+  await prisma.$executeRawUnsafe(`
+    CREATE VIEW ActividadesLegibles AS
+    SELECT
+      a.id,
+      a.curso AS grado,
+      ${moduloLegible("a.modulo")} AS modulo,
+      a.titulo,
+      a.orden,
+      a.puntosBase AS puntos,
+      a.contenido,
+      a.createdAt AS creada
+    FROM Actividad a
+    ORDER BY a.curso, a.modulo, a.orden
+  `);
+
+  await prisma.$executeRawUnsafe(`DROP VIEW IF EXISTS EstudiantesLegibles`);
+  await prisma.$executeRawUnsafe(`
+    CREATE VIEW EstudiantesLegibles AS
+    SELECT
+      id,
+      nombre,
+      usuario,
+      curso AS grado,
+      puntos,
+      (puntos / 500) + 1 AS nivel,
+      racha,
+      ultimaActividadEn AS ultimaActividad,
+      createdAt AS creado
+    FROM Estudiante
+    ORDER BY puntos DESC
+  `);
+
+  await prisma.$executeRawUnsafe(`DROP VIEW IF EXISTS IntentosLegibles`);
+  await prisma.$executeRawUnsafe(`
+    CREATE VIEW IntentosLegibles AS
+    SELECT
+      i.id,
+      e.nombre AS estudiante,
+      e.curso AS grado,
+      ${moduloLegible("act.modulo")} AS modulo,
+      act.titulo AS actividad,
+      CASE i.correcto WHEN 1 THEN 'Sí' ELSE 'No' END AS correcto,
+      i.puntosGanados AS puntos,
+      i.creadoEn AS fecha
+    FROM Intento i
+    JOIN Estudiante e ON e.id = i.estudianteId
+    JOIN Actividad act ON act.id = i.actividadId
+    ORDER BY i.creadoEn DESC
+  `);
 }
 
 main()
