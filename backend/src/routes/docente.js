@@ -2,15 +2,25 @@ const { Router } = require("express");
 const prisma = require("../lib/prisma");
 const { verifyToken, requireRole } = require("../middleware/auth");
 const { calcularNivel } = require("../services/puntos");
+const { parseCursos } = require("../lib/cursosDocente");
 
 const router = Router();
 router.use(verifyToken, requireRole("docente", "administrador"));
 
 const UMBRAL_REFUERZO = 50;
 
-async function construirResumenEstudiantes() {
+// null = sin restricción (administrador); arreglo = solo esos cursos (docente).
+async function cursosPermitidosPara(usuario) {
+  if (usuario.rol === "administrador") return null;
+  const docente = await prisma.docente.findUniqueOrThrow({ where: { id: usuario.id } });
+  return parseCursos(docente.cursosAsignados);
+}
+
+async function construirResumenEstudiantes(cursosPermitidos) {
   const [estudiantes, intentos] = await Promise.all([
-    prisma.estudiante.findMany(),
+    prisma.estudiante.findMany({
+      where: cursosPermitidos ? { curso: { in: cursosPermitidos } } : undefined,
+    }),
     prisma.intento.findMany({ select: { estudianteId: true, actividadId: true, correcto: true, actividad: { select: { modulo: true } } } }),
   ]);
 
@@ -43,8 +53,9 @@ async function construirResumenEstudiantes() {
   });
 }
 
-router.get("/resumen", async (_req, res) => {
-  const filas = await construirResumenEstudiantes();
+router.get("/resumen", async (req, res) => {
+  const cursosPermitidos = await cursosPermitidosPara(req.usuario);
+  const filas = await construirResumenEstudiantes(cursosPermitidos);
 
   const activos = filas.filter((f) => f.tieneActividad);
   const actividadesCompletadas = filas.reduce((suma, f) => suma + f.actividades, 0);
@@ -62,7 +73,8 @@ router.get("/resumen", async (_req, res) => {
 
 router.get("/estudiantes", async (req, res) => {
   const { q, curso } = req.query;
-  let filas = await construirResumenEstudiantes();
+  const cursosPermitidos = await cursosPermitidosPara(req.usuario);
+  let filas = await construirResumenEstudiantes(cursosPermitidos);
 
   if (curso) filas = filas.filter((f) => f.curso === curso);
   if (q) {

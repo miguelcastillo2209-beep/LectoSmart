@@ -4,6 +4,7 @@ const prisma = require("../lib/prisma");
 const { verifyToken, requireRole } = require("../middleware/auth");
 const { CURSOS } = require("../lib/constants");
 const { normalizarUsuario } = require("../lib/usuario");
+const { validarCursos, parseCursos } = require("../lib/cursosDocente");
 
 const router = Router();
 router.use(verifyToken, requireRole("administrador"));
@@ -99,10 +100,10 @@ router.delete("/estudiantes/:id", async (req, res) => {
 
 router.get("/docentes", async (_req, res) => {
   const docentes = await prisma.docente.findMany({
-    select: { id: true, nombre: true, usuario: true, createdAt: true },
+    select: { id: true, nombre: true, usuario: true, cursosAsignados: true, createdAt: true },
     orderBy: { createdAt: "desc" },
   });
-  res.json(docentes);
+  res.json(docentes.map(({ cursosAsignados, ...resto }) => ({ ...resto, cursos: parseCursos(cursosAsignados) })));
 });
 
 router.post("/docentes", async (req, res) => {
@@ -113,14 +114,15 @@ router.post("/docentes", async (req, res) => {
       return res.status(400).json({ error: "Faltan campos obligatorios" });
     }
     const passwordHash = await hashSiVienePassword(password);
+    const cursos = validarCursos(req.body?.cursos) ?? [];
 
     const existente = await prisma.docente.findUnique({ where: { usuario } });
     if (existente) return res.status(409).json({ error: "Ese usuario ya existe" });
 
     const docente = await prisma.docente.create({
-      data: { nombre: nombre.trim(), usuario, passwordHash },
+      data: { nombre: nombre.trim(), usuario, passwordHash, cursosAsignados: JSON.stringify(cursos) },
     });
-    res.status(201).json(docente);
+    res.status(201).json({ ...docente, cursos });
   } catch (err) {
     manejarError(res, err);
   }
@@ -135,6 +137,7 @@ router.put("/docentes/:id", async (req, res) => {
       if (enUso && enUso.id !== req.params.id) return res.status(409).json({ error: "Ese usuario ya existe" });
     }
     const passwordHash = await hashSiVienePassword(password);
+    const cursos = validarCursos(req.body?.cursos);
 
     const docente = await prisma.docente.update({
       where: { id: req.params.id },
@@ -142,9 +145,10 @@ router.put("/docentes/:id", async (req, res) => {
         ...(nombre && { nombre: nombre.trim() }),
         ...(usuario && { usuario }),
         ...(passwordHash && { passwordHash }),
+        ...(cursos && { cursosAsignados: JSON.stringify(cursos) }),
       },
     });
-    res.json(docente);
+    res.json({ ...docente, cursos: parseCursos(docente.cursosAsignados) });
   } catch (err) {
     manejarError(res, err);
   }

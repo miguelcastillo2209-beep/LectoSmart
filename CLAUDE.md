@@ -92,6 +92,18 @@ Guevara.
 - Cuenta de administrador sembrada por defecto: usuario `admin`,
   contraseña `R0CK3T` (definida en `backend/prisma/seed.js` — cambiarla
   ahí, o desde el propio panel `/admin`, antes de un uso real).
+- Las tres pantallas de ingreso (`Login.jsx`, `LoginDocente.jsx`,
+  `LoginAdmin.jsx`) se enlazan entre sí ("¿Eres...? Ingresa aquí") para
+  que se pueda llegar a cualquiera de los tres roles desde cualquiera.
+- Un `Docente` tiene `cursosAsignados` (JSON-string, mismo patrón que
+  `Actividad.contenido`/`Logro.criterio`) y solo ve en `/docente` a los
+  estudiantes de esos cursos (`docente.js` filtra con
+  `cursosPermitidosPara(req.usuario)`); un docente sin cursos asignados
+  ve un mensaje pidiendo que un administrador se los asigne, no una
+  tabla vacía. El **administrador nunca se filtra** — siempre ve todos
+  los cursos, sin importar `cursosAsignados`. Los cursos se asignan
+  desde `/admin` → pestaña Docentes → botones de curso (selección
+  múltiple).
 
 ## Git / commits
 - Commits descriptivos en español, enfocados en el "por qué".

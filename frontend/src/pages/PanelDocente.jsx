@@ -60,6 +60,9 @@ export default function PanelDocente() {
     navigate("/");
   };
 
+  const cursosDisponibles = rol === "administrador" ? CURSOS : (perfil?.cursos ?? []);
+  const sinCursosAsignados = rol === "docente" && cursosDisponibles.length === 0;
+
   const tarjetas = resumen && [
     { valor: String(resumen.estudiantesActivos), etiqueta: "Estudiantes activos", color: C.azul },
     { valor: String(resumen.actividadesCompletadas), etiqueta: "Actividades completadas", color: C.verde },
@@ -103,7 +106,16 @@ export default function PanelDocente() {
           </p>
         )}
 
-        {tarjetas && (
+        {sinCursosAsignados && !error && (
+          <div className="rounded-3xl p-6 mt-6 text-center" style={{ background: "#fff", border: `2px solid ${C.borde}` }}>
+            <p className="ls-display font-bold" style={{ color: C.tinta }}>Tu cuenta no tiene cursos asignados todavía</p>
+            <p className="ls-body text-sm mt-1" style={{ color: C.gris }}>
+              Pide a un administrador que te asigne uno o más cursos desde el panel de administración.
+            </p>
+          </div>
+        )}
+
+        {!sinCursosAsignados && tarjetas && (
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-6">
             {tarjetas.map((k) => (
               <div key={k.etiqueta} className="rounded-2xl p-5" style={{ background: "#fff", border: `2px solid ${C.borde}` }}>
@@ -114,6 +126,7 @@ export default function PanelDocente() {
           </div>
         )}
 
+        {!sinCursosAsignados && (
         <div className="mt-8 rounded-3xl overflow-hidden" style={{ background: "#fff", border: `2px solid ${C.borde}` }}>
           <div className="px-6 py-4 flex items-center justify-between flex-wrap gap-3" style={{ borderBottom: `2px solid ${C.borde}` }}>
             <h2 className="ls-display text-lg font-bold" style={{ color: C.tinta }}>Estudiantes</h2>
@@ -124,8 +137,8 @@ export default function PanelDocente() {
                 className="ls-body text-sm px-3 py-2 rounded-full outline-none"
                 style={{ background: C.fondo, border: `2px solid ${C.borde}`, color: C.tinta }}
               >
-                <option value="">Todos los cursos</option>
-                {CURSOS.map((c) => (
+                <option value="">{rol === "administrador" ? "Todos los cursos" : "Todos mis cursos"}</option>
+                {cursosDisponibles.map((c) => (
                   <option key={c} value={c}>{c}</option>
                 ))}
               </select>
@@ -178,6 +191,7 @@ export default function PanelDocente() {
             </table>
           </div>
         </div>
+        )}
       </div>
     </div>
   );

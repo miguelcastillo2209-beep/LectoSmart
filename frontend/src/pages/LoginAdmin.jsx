@@ -86,6 +86,9 @@ export default function LoginAdmin() {
         <p className="ls-body text-center text-sm mt-6" style={{ color: C.gris }}>
           ¿Eres docente? <Link to="/ingreso-docente" style={{ color: C.azul, fontWeight: 600 }}>Ingresa aquí</Link>
         </p>
+        <p className="ls-body text-center text-sm mt-2" style={{ color: C.gris }}>
+          ¿Eres estudiante? <Link to="/ingreso" style={{ color: C.azul, fontWeight: 600 }}>Ingresa aquí</Link>
+        </p>
       </div>
     </div>
   );

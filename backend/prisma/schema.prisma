@@ -31,6 +31,10 @@ model Docente {
   nombre       String
   usuario      String   @unique
   passwordHash String
+  // JSON-string con el arreglo de cursos asignados, ej. '["6°","7°"]'
+  // (mismo patrón que Actividad.contenido / Logro.criterio). Un docente
+  // solo ve estudiantes de estos cursos; un administrador ve todos.
+  cursosAsignados String   @default("[]")
   createdAt    DateTime @default(now())
 }
 

@@ -15,7 +15,7 @@ const TABS = [
 
 const COLUMNAS = {
   estudiantes: ["Nombre", "Usuario", "Curso", "Puntos", "Creado"],
-  docentes: ["Nombre", "Usuario", "Creado"],
+  docentes: ["Nombre", "Usuario", "Cursos", "Creado"],
   administradores: ["Nombre", "Usuario", "Creado"],
 };
 
@@ -24,7 +24,7 @@ function formatFecha(iso) {
 }
 
 function formularioVacio() {
-  return { nombre: "", usuario: "", password: "", curso: CURSOS[0] };
+  return { nombre: "", usuario: "", password: "", curso: CURSOS[0], cursos: [] };
 }
 
 export default function PanelAdmin() {
@@ -73,9 +73,22 @@ export default function PanelAdmin() {
 
   const abrirEditar = (item) => {
     setEditando(item);
-    setForm({ nombre: item.nombre, usuario: item.usuario, password: "", curso: item.curso ?? CURSOS[0] });
+    setForm({
+      nombre: item.nombre,
+      usuario: item.usuario,
+      password: "",
+      curso: item.curso ?? CURSOS[0],
+      cursos: item.cursos ?? [],
+    });
     setErrorForm(null);
     setFormAbierto(true);
+  };
+
+  const alternarCurso = (c) => {
+    setForm((f) => ({
+      ...f,
+      cursos: f.cursos.includes(c) ? f.cursos.filter((x) => x !== c) : [...f.cursos, c],
+    }));
   };
 
   const cerrarFormulario = () => {
@@ -95,6 +108,7 @@ export default function PanelAdmin() {
         usuario: form.usuario,
         ...(form.password && { password: form.password }),
         ...(tab === "estudiantes" && { curso: form.curso }),
+        ...(tab === "docentes" && { cursos: form.cursos }),
       };
 
       if (editando) {
@@ -241,6 +255,33 @@ export default function PanelAdmin() {
                   </div>
                 </label>
               )}
+              {tab === "docentes" && (
+                <label className="block md:col-span-2">
+                  <span className="ls-body text-sm font-semibold" style={{ color: C.tinta }}>
+                    Cursos a cargo (puede elegir varios)
+                  </span>
+                  <div className="grid grid-cols-3 gap-2 mt-1.5 max-w-sm">
+                    {CURSOS.map((c) => {
+                      const activo = form.cursos.includes(c);
+                      return (
+                        <button
+                          type="button"
+                          key={c}
+                          onClick={() => alternarCurso(c)}
+                          className="ls-btn ls-body text-center text-sm font-semibold py-2 rounded-xl"
+                          style={{
+                            background: activo ? C.azul : C.fondo,
+                            color: activo ? "#fff" : C.tinta,
+                            border: `2px solid ${activo ? C.azul : C.borde}`,
+                          }}
+                        >
+                          {c}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </label>
+              )}
             </div>
 
             {errorForm && (
@@ -319,6 +360,11 @@ export default function PanelAdmin() {
                         <td className="px-6 py-3.5" style={{ color: C.gris }}>{item.curso}</td>
                         <td className="px-6 py-3.5 font-semibold" style={{ color: C.tinta }}>⭐ {item.puntos}</td>
                       </>
+                    )}
+                    {tab === "docentes" && (
+                      <td className="px-6 py-3.5" style={{ color: item.cursos?.length ? C.tinta : C.gris }}>
+                        {item.cursos?.length ? item.cursos.join(", ") : "Sin asignar"}
+                      </td>
                     )}
                     <td className="px-6 py-3.5 whitespace-nowrap" style={{ color: C.gris }}>{formatFecha(item.createdAt)}</td>
                     <td className="px-6 py-3.5 whitespace-nowrap">

@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import { C } from "../theme/colors";
 import { Leo } from "../components/Leo";
 import { AppHeader } from "../components/AppHeader";
@@ -148,6 +148,13 @@ export default function Login() {
             {cargando ? "Un momento…" : modo === "entrar" ? "Entrar" : "Crear cuenta"}
           </button>
         </form>
+
+        <p className="ls-body text-center text-sm mt-6" style={{ color: C.gris }}>
+          ¿Eres docente? <Link to="/ingreso-docente" style={{ color: C.azul, fontWeight: 600 }}>Ingresa aquí</Link>
+        </p>
+        <p className="ls-body text-center text-sm mt-2" style={{ color: C.gris }}>
+          ¿Eres administrador? <Link to="/ingreso-admin" style={{ color: C.azul, fontWeight: 600 }}>Ingresa aquí</Link>
+        </p>
       </div>
     </div>
   );

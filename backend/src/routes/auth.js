@@ -74,7 +74,10 @@ router.post("/docentes/login", async (req, res) => {
   }
 
   const token = firmarToken({ id: docente.id, rol: "docente" });
-  res.json({ token, docente: { id: docente.id, nombre: docente.nombre } });
+  res.json({
+    token,
+    docente: { id: docente.id, nombre: docente.nombre, cursos: JSON.parse(docente.cursosAsignados) },
+  });
 });
 
 router.post("/administradores/login", async (req, res) => {
