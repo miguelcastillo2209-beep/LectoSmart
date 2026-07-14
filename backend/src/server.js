@@ -10,7 +10,10 @@ const adminRoutes = require("./routes/admin");
 
 const app = express();
 
-app.use(cors());
+// Sin FRONTEND_URL definida (desarrollo local) se acepta cualquier
+// origen, igual que antes. En producción se restringe al dominio real
+// del frontend.
+app.use(cors(process.env.FRONTEND_URL ? { origin: process.env.FRONTEND_URL } : undefined));
 app.use(express.json());
 
 app.get("/api/health", (_req, res) => res.json({ ok: true }));

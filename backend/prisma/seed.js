@@ -7,8 +7,17 @@ const docentes = [
   { nombre: "Martha Bernal", usuario: "mbernal", password: "docente123" },
 ];
 
+// El usuario/contraseña del administrador se toman de variables de
+// entorno (ADMIN_USUARIO/ADMIN_PASSWORD) para no dejar una contraseña
+// real escrita en el código. En producción (Render) se definen con un
+// valor real; el valor por defecto de aquí abajo solo aplica si no están
+// definidas (desarrollo local).
 const administradores = [
-  { nombre: "Administrador", usuario: "admin", password: "R0CK3T" },
+  {
+    nombre: "Administrador",
+    usuario: process.env.ADMIN_USUARIO || "admin",
+    password: process.env.ADMIN_PASSWORD || "R0CK3T",
+  },
 ];
 
 const logros = [

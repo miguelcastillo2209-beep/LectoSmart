@@ -22,7 +22,8 @@ export async function apiFetch(path, { method = "GET", body, onUnauthorized } = 
   const token = getToken();
   if (token) headers.Authorization = `Bearer ${token}`;
 
-  const res = await fetch(`/api${path}`, {
+  const base = import.meta.env.VITE_API_URL || "";
+  const res = await fetch(`${base}/api${path}`, {
     method,
     headers,
     body: body !== undefined ? JSON.stringify(body) : undefined,

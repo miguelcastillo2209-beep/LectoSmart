@@ -3,13 +3,14 @@ generator client {
 }
 
 datasource db {
-  provider = "sqlite"
+  provider = "postgresql"
   url      = env("DATABASE_URL")
 }
 
-// SQLite no soporta enums nativos en Prisma; el módulo se valida en el
-// código de la aplicación (ver backend/src/lib/constants.js).
-// Valores válidos: "PALABRAS" | "COMPRENSION" | "FLUIDEZ"
+// El módulo se guarda como texto simple (no enum) por consistencia con
+// el resto del proyecto; se valida en el código de la aplicación (ver
+// backend/src/lib/constants.js). Valores válidos:
+// "PALABRAS" | "COMPRENSION" | "FLUIDEZ"
 
 model Estudiante {
   id                String    @id @default(cuid())

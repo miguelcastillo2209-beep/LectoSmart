@@ -3,6 +3,7 @@ dist/
 build/
 .env
 .env.*
+!.env.example
 backend/prisma/dev.db
 backend/prisma/dev.db-journal
 *.log
