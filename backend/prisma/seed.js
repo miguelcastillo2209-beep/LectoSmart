@@ -936,10 +936,13 @@ async function main() {
   console.log("Seed completado: docentes, logros y banco de actividades (6°-11°).");
 }
 
-// Vistas SQL de solo lectura, pensadas para explorar la base de datos en
-// DB Browser for SQLite con nombres en español en vez de los códigos
-// internos que usa el código de la aplicación (PALABRAS/COMPRENSION/
-// FLUIDEZ, 0/1, IDs). No las usa la app — son solo para inspección manual.
+// Vistas SQL de solo lectura, pensadas para explorar la base de datos
+// (Neon SQL editor, o cualquier cliente de Postgres) con nombres en
+// español en vez de los códigos internos que usa el código de la
+// aplicación (PALABRAS/COMPRENSION/FLUIDEZ, booleanos, IDs). No las usa
+// la app — son solo para inspección manual. Postgres es sensible a
+// mayúsculas en identificadores no citados, así que las tablas/columnas
+// con mayúsculas (creadas por Prisma tal cual el modelo) van entre "".
 async function crearVistasLegibles() {
   const moduloLegible = (columna) => `
     CASE ${columna}
@@ -949,25 +952,25 @@ async function crearVistasLegibles() {
       ELSE ${columna}
     END`;
 
-  await prisma.$executeRawUnsafe(`DROP VIEW IF EXISTS ActividadesLegibles`);
+  await prisma.$executeRawUnsafe(`DROP VIEW IF EXISTS "ActividadesLegibles"`);
   await prisma.$executeRawUnsafe(`
-    CREATE VIEW ActividadesLegibles AS
+    CREATE VIEW "ActividadesLegibles" AS
     SELECT
       a.id,
       a.curso AS grado,
       ${moduloLegible("a.modulo")} AS modulo,
       a.titulo,
       a.orden,
-      a.puntosBase AS puntos,
+      a."puntosBase" AS puntos,
       a.contenido,
-      a.createdAt AS creada
-    FROM Actividad a
+      a."createdAt" AS creada
+    FROM "Actividad" a
     ORDER BY a.curso, a.modulo, a.orden
   `);
 
-  await prisma.$executeRawUnsafe(`DROP VIEW IF EXISTS EstudiantesLegibles`);
+  await prisma.$executeRawUnsafe(`DROP VIEW IF EXISTS "EstudiantesLegibles"`);
   await prisma.$executeRawUnsafe(`
-    CREATE VIEW EstudiantesLegibles AS
+    CREATE VIEW "EstudiantesLegibles" AS
     SELECT
       id,
       nombre,
@@ -976,28 +979,28 @@ async function crearVistasLegibles() {
       puntos,
       (puntos / 500) + 1 AS nivel,
       racha,
-      ultimaActividadEn AS ultimaActividad,
-      createdAt AS creado
-    FROM Estudiante
+      "ultimaActividadEn" AS "ultimaActividad",
+      "createdAt" AS creado
+    FROM "Estudiante"
     ORDER BY puntos DESC
   `);
 
-  await prisma.$executeRawUnsafe(`DROP VIEW IF EXISTS IntentosLegibles`);
+  await prisma.$executeRawUnsafe(`DROP VIEW IF EXISTS "IntentosLegibles"`);
   await prisma.$executeRawUnsafe(`
-    CREATE VIEW IntentosLegibles AS
+    CREATE VIEW "IntentosLegibles" AS
     SELECT
       i.id,
       e.nombre AS estudiante,
       e.curso AS grado,
-      ${moduloLegible("act.modulo")} AS modulo,
+      ${moduloLegible('act.modulo')} AS modulo,
       act.titulo AS actividad,
-      CASE i.correcto WHEN 1 THEN 'Sí' ELSE 'No' END AS correcto,
-      i.puntosGanados AS puntos,
-      i.creadoEn AS fecha
-    FROM Intento i
-    JOIN Estudiante e ON e.id = i.estudianteId
-    JOIN Actividad act ON act.id = i.actividadId
-    ORDER BY i.creadoEn DESC
+      CASE WHEN i.correcto THEN 'Sí' ELSE 'No' END AS correcto,
+      i."puntosGanados" AS puntos,
+      i."creadoEn" AS fecha
+    FROM "Intento" i
+    JOIN "Estudiante" e ON e.id = i."estudianteId"
+    JOIN "Actividad" act ON act.id = i."actividadId"
+    ORDER BY i."creadoEn" DESC
   `);
 }
 
