@@ -1,0 +1,1104 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Manual de LectoSmart</title>
+<meta name="description" content="Manual de uso de LectoSmart: qué es, cómo entra cada rol y cómo funciona cada función.">
+<style>
+  *, *::before, *::after { box-sizing: border-box; }
+  body { margin: 0; }
+  img { max-width: 100%; }
+</style>
+<style>
+  :root {
+    --papel: #F2F6FC;
+    --superficie: #FFFFFF;
+    --superficie-2: #F8FAFE;
+    --tinta: #1E2A4A;
+    --tinta-suave: #46527A;
+    --gris: #6B7590;
+    --borde: #E3E9F4;
+    --azul: #4F6DF5;
+    --azul-suave: #E4EAFE;
+    --verde: #2FBE8F;
+    --verde-suave: #DFF6ED;
+    --coral: #FF6B5E;
+    --coral-suave: #FFE9E7;
+    --morado: #8B5CF6;
+    --morado-suave: #F0E9FE;
+    --amarillo: #FFD84D;
+    --sombra: 0 1px 2px rgba(30, 42, 74, .06), 0 8px 24px rgba(30, 42, 74, .05);
+
+    --display: ui-rounded, "SF Pro Rounded", "Segoe UI Variable Display", Nunito, "Trebuchet MS", system-ui, sans-serif;
+    --cuerpo: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --papel: #121829;
+      --superficie: #1A2237;
+      --superficie-2: #202940;
+      --tinta: #E8EDF9;
+      --tinta-suave: #B6C0D8;
+      --gris: #8E99B4;
+      --borde: #2C3654;
+      --azul: #8AA0FF;
+      --azul-suave: #23305A;
+      --verde: #4FD3A6;
+      --verde-suave: #163A31;
+      --coral: #FF8B80;
+      --coral-suave: #3E2320;
+      --morado: #A98BFF;
+      --morado-suave: #2C2450;
+      --amarillo: #FFD84D;
+      --sombra: 0 1px 2px rgba(0, 0, 0, .3), 0 8px 24px rgba(0, 0, 0, .25);
+    }
+  }
+
+  :root[data-theme="dark"] {
+    --papel: #121829;
+    --superficie: #1A2237;
+    --superficie-2: #202940;
+    --tinta: #E8EDF9;
+    --tinta-suave: #B6C0D8;
+    --gris: #8E99B4;
+    --borde: #2C3654;
+    --azul: #8AA0FF;
+    --azul-suave: #23305A;
+    --verde: #4FD3A6;
+    --verde-suave: #163A31;
+    --coral: #FF8B80;
+    --coral-suave: #3E2320;
+    --morado: #A98BFF;
+    --morado-suave: #2C2450;
+    --amarillo: #FFD84D;
+    --sombra: 0 1px 2px rgba(0, 0, 0, .3), 0 8px 24px rgba(0, 0, 0, .25);
+  }
+
+  :root[data-theme="light"] {
+    --papel: #F2F6FC;
+    --superficie: #FFFFFF;
+    --superficie-2: #F8FAFE;
+    --tinta: #1E2A4A;
+    --tinta-suave: #46527A;
+    --gris: #6B7590;
+    --borde: #E3E9F4;
+    --azul: #4F6DF5;
+    --azul-suave: #E4EAFE;
+    --verde: #2FBE8F;
+    --verde-suave: #DFF6ED;
+    --coral: #FF6B5E;
+    --coral-suave: #FFE9E7;
+    --morado: #8B5CF6;
+    --morado-suave: #F0E9FE;
+    --amarillo: #FFD84D;
+    --sombra: 0 1px 2px rgba(30, 42, 74, .06), 0 8px 24px rgba(30, 42, 74, .05);
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    background: var(--papel);
+    color: var(--tinta);
+    font-family: var(--cuerpo);
+    font-size: 17px;
+    line-height: 1.65;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .envoltura {
+    max-width: 780px;
+    margin: 0 auto;
+    padding: 0 20px 96px;
+  }
+
+  /* ---------- Portada ---------- */
+  .portada {
+    padding: 56px 0 32px;
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+  }
+
+  .marca {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    font-family: var(--display);
+    font-weight: 800;
+    font-size: 1.05rem;
+    letter-spacing: .01em;
+    color: var(--azul);
+  }
+
+  .marca .buho {
+    width: 34px; height: 34px;
+    display: grid; place-items: center;
+    background: var(--azul-suave);
+    border-radius: 11px;
+    font-size: 1.1rem;
+  }
+
+  h1 {
+    font-family: var(--display);
+    font-weight: 800;
+    font-size: clamp(2.1rem, 6vw, 3rem);
+    line-height: 1.1;
+    letter-spacing: -.02em;
+    margin: 0;
+    text-wrap: balance;
+  }
+
+  .bajada {
+    font-size: 1.13rem;
+    color: var(--tinta-suave);
+    margin: 0;
+    max-width: 60ch;
+    text-wrap: pretty;
+  }
+
+  .ficha {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 4px;
+  }
+
+  .ficha span {
+    font-size: .82rem;
+    font-weight: 600;
+    color: var(--tinta-suave);
+    background: var(--superficie);
+    border: 1px solid var(--borde);
+    border-radius: 999px;
+    padding: 5px 13px;
+  }
+
+  /* ---------- Índice ---------- */
+  nav.indice {
+    background: var(--superficie);
+    border: 1px solid var(--borde);
+    border-radius: 16px;
+    padding: 20px 22px;
+    box-shadow: var(--sombra);
+    margin-bottom: 56px;
+  }
+
+  nav.indice h2 {
+    font-family: var(--display);
+    font-size: .78rem;
+    text-transform: uppercase;
+    letter-spacing: .13em;
+    color: var(--gris);
+    margin: 0 0 12px;
+    font-weight: 700;
+  }
+
+  nav.indice ol {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+    gap: 2px 20px;
+  }
+
+  nav.indice a {
+    display: block;
+    padding: 7px 0;
+    color: var(--tinta);
+    text-decoration: none;
+    font-weight: 500;
+    border-bottom: 1px solid transparent;
+  }
+
+  nav.indice a:hover { color: var(--azul); }
+  nav.indice a:focus-visible { outline: 2px solid var(--azul); outline-offset: 3px; border-radius: 4px; }
+
+  /* ---------- Secciones ---------- */
+  section { margin-bottom: 60px; scroll-margin-top: 20px; }
+
+  .encabezado-seccion {
+    display: flex;
+    align-items: center;
+    gap: 13px;
+    margin-bottom: 8px;
+    padding-bottom: 14px;
+    border-bottom: 2px solid var(--borde);
+  }
+
+  .insignia {
+    width: 40px; height: 40px;
+    flex: 0 0 40px;
+    display: grid; place-items: center;
+    border-radius: 12px;
+    font-size: 1.2rem;
+    background: var(--azul-suave);
+  }
+
+  .insignia.verde { background: var(--verde-suave); }
+  .insignia.morada { background: var(--morado-suave); }
+  .insignia.coral { background: var(--coral-suave); }
+
+  h2.titulo-seccion {
+    font-family: var(--display);
+    font-size: 1.62rem;
+    font-weight: 800;
+    letter-spacing: -.015em;
+    margin: 0;
+    text-wrap: balance;
+  }
+
+  h3 {
+    font-family: var(--display);
+    font-size: 1.16rem;
+    font-weight: 700;
+    margin: 34px 0 10px;
+    letter-spacing: -.01em;
+  }
+
+  p { margin: 0 0 14px; max-width: 66ch; text-wrap: pretty; }
+
+  ul.lista { margin: 0 0 16px; padding-left: 22px; max-width: 66ch; }
+  ul.lista li { margin-bottom: 8px; }
+
+  strong { font-weight: 650; }
+  em { font-style: normal; background: linear-gradient(transparent 62%, var(--amarillo) 62%); padding: 0 2px; }
+
+  @media (prefers-color-scheme: dark) {
+    em { background: none; color: var(--amarillo); font-weight: 600; }
+  }
+  :root[data-theme="dark"] em { background: none; color: var(--amarillo); font-weight: 600; }
+  :root[data-theme="light"] em { background: linear-gradient(transparent 62%, var(--amarillo) 62%); color: inherit; font-weight: inherit; }
+
+  /* ---------- Tarjetas de módulo ---------- */
+  .modulos {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(215px, 1fr));
+    gap: 14px;
+    margin: 20px 0 8px;
+  }
+
+  .modulo {
+    background: var(--superficie);
+    border: 1px solid var(--borde);
+    border-radius: 14px;
+    padding: 18px;
+    box-shadow: var(--sombra);
+    display: flex;
+    flex-direction: column;
+    gap: 7px;
+  }
+
+  .modulo .icono { font-size: 1.5rem; line-height: 1; }
+
+  .modulo h4 {
+    font-family: var(--display);
+    font-size: 1.03rem;
+    font-weight: 700;
+    margin: 0;
+  }
+
+  .modulo p { font-size: .92rem; color: var(--tinta-suave); margin: 0; }
+
+  .puntos-chip {
+    align-self: flex-start;
+    margin-top: 3px;
+    font-size: .76rem;
+    font-weight: 700;
+    padding: 3px 10px;
+    border-radius: 999px;
+    background: var(--verde-suave);
+    color: var(--verde);
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* ---------- Pasos ---------- */
+  ol.pasos {
+    counter-reset: paso;
+    list-style: none;
+    margin: 18px 0;
+    padding: 0;
+    max-width: 66ch;
+    display: flex;
+    flex-direction: column;
+    gap: 13px;
+  }
+
+  ol.pasos li {
+    counter-increment: paso;
+    display: grid;
+    grid-template-columns: 30px 1fr;
+    gap: 13px;
+    align-items: start;
+  }
+
+  ol.pasos li::before {
+    content: counter(paso);
+    width: 30px; height: 30px;
+    display: grid; place-items: center;
+    border-radius: 9px;
+    background: var(--azul);
+    color: #fff;
+    font-family: var(--display);
+    font-weight: 800;
+    font-size: .92rem;
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* ---------- Aviso ---------- */
+  .aviso {
+    border-radius: 14px;
+    padding: 16px 18px;
+    margin: 22px 0;
+    border: 1px solid var(--borde);
+    background: var(--superficie-2);
+    display: grid;
+    grid-template-columns: 24px 1fr;
+    gap: 13px;
+    align-items: start;
+  }
+
+  .aviso .simbolo { font-size: 1.15rem; line-height: 1.35; }
+  .aviso p { margin: 0; font-size: .95rem; }
+  .aviso p + p { margin-top: 9px; }
+  .aviso .rotulo {
+    font-family: var(--display);
+    font-weight: 700;
+    display: block;
+    margin-bottom: 3px;
+  }
+
+  .aviso.ojo { background: var(--coral-suave); border-color: transparent; }
+  .aviso.ojo .rotulo { color: var(--coral); }
+  .aviso.consejo { background: var(--morado-suave); border-color: transparent; }
+  .aviso.consejo .rotulo { color: var(--morado); }
+
+  /* ---------- Tablas ---------- */
+  .tabla-envoltura {
+    overflow-x: auto;
+    margin: 18px 0 22px;
+    border: 1px solid var(--borde);
+    border-radius: 14px;
+    background: var(--superficie);
+  }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: .94rem;
+    min-width: 420px;
+  }
+
+  th, td {
+    text-align: left;
+    padding: 11px 16px;
+    border-bottom: 1px solid var(--borde);
+  }
+
+  th {
+    font-family: var(--display);
+    font-weight: 700;
+    font-size: .8rem;
+    text-transform: uppercase;
+    letter-spacing: .07em;
+    color: var(--gris);
+    background: var(--superficie-2);
+  }
+
+  tbody tr:last-child td { border-bottom: none; }
+  td.num { font-variant-numeric: tabular-nums; }
+
+  /* ---------- Funciones docente ---------- */
+  .funcion {
+    background: var(--superficie);
+    border: 1px solid var(--borde);
+    border-left: 3px solid var(--morado);
+    border-radius: 12px;
+    padding: 16px 18px;
+    margin-bottom: 13px;
+  }
+
+  .funcion h4 {
+    font-family: var(--display);
+    font-size: 1.04rem;
+    font-weight: 700;
+    margin: 0 0 6px;
+  }
+
+  .funcion p { margin: 0; font-size: .95rem; color: var(--tinta-suave); }
+  .funcion p + p { margin-top: 8px; }
+
+  /* ---------- Cierre ---------- */
+  .cierre {
+    margin-top: 68px;
+    padding-top: 24px;
+    border-top: 2px solid var(--borde);
+    font-size: .89rem;
+    color: var(--gris);
+  }
+
+  .cierre p { max-width: none; }
+
+  @media (max-width: 560px) {
+    body { font-size: 16px; }
+    .portada { padding: 40px 0 26px; }
+    .envoltura { padding: 0 16px 72px; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    * { animation: none !important; transition: none !important; }
+  }
+</style>
+
+<div class="envoltura">
+
+  <header class="portada">
+    <span class="marca"><span class="buho">🦉</span> LectoSmart</span>
+    <h1>Manual de uso de la plataforma</h1>
+    <p class="bajada">
+      Todo lo que LectoSmart puede hacer, explicado paso a paso: para qué sirve,
+      cómo entra cada persona y qué encuentra adentro. Pensado para leerse
+      completo una vez y después consultarse por partes.
+    </p>
+    <div class="ficha">
+      <span>I.E. Técnica Valle de Tenza · Guateque</span>
+      <span>Grados 6° a 11°</span>
+      <span>Estudiantes, docentes y administradores</span>
+    </div>
+  </header>
+
+  <nav class="indice" aria-label="Contenido del manual">
+    <h2>Contenido</h2>
+    <ol>
+      <li><a href="#que-es">Qué es LectoSmart</a></li>
+      <li><a href="#entrar">Cómo entra cada persona</a></li>
+      <li><a href="#estudiantes">Guía para estudiantes</a></li>
+      <li><a href="#juego">Cómo funciona el juego</a></li>
+      <li><a href="#voz">Lectura en voz alta</a></li>
+      <li><a href="#docentes">Guía para docentes</a></li>
+      <li><a href="#administradores">Guía para administradores</a></li>
+      <li><a href="#tablas">Tablas de referencia</a></li>
+      <li><a href="#recomendaciones">Antes de usarla en clase</a></li>
+    </ol>
+  </nav>
+
+  <!-- ============ QUÉ ES ============ -->
+  <section id="que-es">
+    <div class="encabezado-seccion">
+      <span class="insignia">📚</span>
+      <h2 class="titulo-seccion">Qué es LectoSmart</h2>
+    </div>
+
+    <p>
+      LectoSmart es una plataforma web para que los estudiantes de sexto a once
+      <strong>mejoren su lectura practicando un poco cada día</strong>. En lugar de
+      talleres en papel, la lectura se convierte en retos cortos que dan puntos,
+      suben de nivel y llevan un registro automático del avance de cada estudiante.
+    </p>
+
+    <p>
+      Para el docente, esa práctica deja de ser invisible: la plataforma muestra
+      quién está practicando, en qué se equivoca y qué habilidad le cuesta más,
+      sin tener que revisar cuaderno por cuaderno.
+    </p>
+
+    <h3>Lo que resuelve</h3>
+    <ul class="lista">
+      <li><strong>Práctica constante.</strong> Actividades cortas que un estudiante hace en pocos minutos desde el celular.</li>
+      <li><strong>Retroalimentación inmediata.</strong> Cada respuesta se explica al instante, no días después.</li>
+      <li><strong>Seguimiento real.</strong> El docente ve el progreso del curso sin calificar manualmente.</li>
+      <li><strong>Contenido por grado.</strong> Cada curso tiene sus propias lecturas, con dificultad acorde a su nivel.</li>
+    </ul>
+
+    <h3>Dónde funciona</h3>
+    <p>
+      Se abre en el navegador de cualquier celular, tablet o computador. También se
+      puede <em>instalar como aplicación</em>: al abrirla, el navegador ofrece
+      «Instalar app» y queda con su ícono en la pantalla de inicio, como cualquier
+      otra aplicación. Existe además una instalación local para el colegio que
+      funciona sin depender de internet.
+    </p>
+  </section>
+
+  <!-- ============ ENTRAR ============ -->
+  <section id="entrar">
+    <div class="encabezado-seccion">
+      <span class="insignia">🔑</span>
+      <h2 class="titulo-seccion">Cómo entra cada persona</h2>
+    </div>
+
+    <p>
+      Hay <strong>tres puertas de entrada distintas</strong>, una por cada tipo de
+      usuario. Cada quien ve solamente lo que le corresponde: un estudiante no
+      puede entrar al panel del docente, y un docente no puede entrar al de
+      administración.
+    </p>
+
+    <div class="tabla-envoltura">
+      <table>
+        <thead>
+          <tr><th>Quién</th><th>Cómo entra</th><th>Qué encuentra</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>Estudiante</strong></td>
+            <td>Botón «Soy estudiante»</td>
+            <td>Sus actividades, puntos y ranking</td>
+          </tr>
+          <tr>
+            <td><strong>Docente</strong></td>
+            <td>Botón «Soy docente»</td>
+            <td>Seguimiento del curso y herramientas de clase</td>
+          </tr>
+          <tr>
+            <td><strong>Administrador</strong></td>
+            <td>Enlace en la pantalla de ingreso</td>
+            <td>Gestión de todas las cuentas</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <p>
+      Las tres pantallas están enlazadas entre sí, así que si alguien entra por la
+      puerta equivocada encuentra el enlace para ir a la correcta sin devolverse.
+    </p>
+
+    <h3>Los estudiantes no se registran solos</h3>
+    <p>
+      <strong>Las cuentas de los estudiantes las crea el docente</strong> (o un
+      administrador) desde su panel, y le entrega a cada uno su usuario y su
+      contraseña. En la pantalla de ingreso no existe la opción de crear cuenta:
+      solo se inicia sesión.
+    </p>
+    <p>
+      Se hizo así por dos razones: el colegio controla quién entra a la plataforma,
+      y <em>el curso queda siempre bien asignado</em>. Si cada estudiante eligiera
+      su propio curso, bastaría con que uno se equivocara para que practicara con
+      textos que no le corresponden y para que el ranking y los reportes de ese
+      curso quedaran distorsionados.
+    </p>
+
+    <div class="aviso consejo">
+      <span class="simbolo">💡</span>
+      <div>
+        <span class="rotulo">Da igual escribirlo en mayúsculas</span>
+        <p>
+          El usuario no distingue mayúsculas de minúsculas ni le afectan los
+          espacios de más: <strong>«ana.perez», «Ana.Perez» y «ANA.PEREZ» son la
+          misma cuenta</strong>. Un error de digitación con las mayúsculas no va a
+          dejar a nadie por fuera.
+        </p>
+      </div>
+    </div>
+
+    <div class="aviso consejo">
+      <span class="simbolo">💡</span>
+      <div>
+        <span class="rotulo">Si un estudiante olvida su contraseña</span>
+        <p>
+          No hay recuperación por correo. El docente puede generarle una contraseña
+          nueva desde su panel y entregársela en persona. Está explicado más
+          adelante, en la guía para docentes.
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ ESTUDIANTES ============ -->
+  <section id="estudiantes">
+    <div class="encabezado-seccion">
+      <span class="insignia verde">🎒</span>
+      <h2 class="titulo-seccion">Guía para estudiantes</h2>
+    </div>
+
+    <p>
+      Al entrar, el estudiante llega a su panel: lo saluda Leo (el búho de la
+      plataforma), ve cuántos puntos lleva, en qué nivel va y si mantiene su racha.
+      Desde ahí escoge en qué quiere practicar.
+    </p>
+
+    <h3>Los tres módulos</h3>
+
+    <div class="modulos">
+      <article class="modulo">
+        <span class="icono">🔤</span>
+        <h4>Reconocer palabras</h4>
+        <p>Ejercicios para identificar palabras, su significado y su uso correcto.</p>
+        <span class="puntos-chip">20 puntos</span>
+      </article>
+      <article class="modulo">
+        <span class="icono">📖</span>
+        <h4>Comprensión lectora</h4>
+        <p>Un texto corto y preguntas sobre lo que se entendió de él.</p>
+        <span class="puntos-chip">20 puntos</span>
+      </article>
+      <article class="modulo">
+        <span class="icono">⏱️</span>
+        <h4>Fluidez lectora</h4>
+        <p>Lectura cronometrada: se mide a cuántas palabras por minuto se lee.</p>
+        <span class="puntos-chip">30 puntos</span>
+      </article>
+    </div>
+
+    <p>
+      Cada módulo tiene <strong>8 actividades por curso</strong>. Fluidez da más
+      puntos porque exige leer en voz alta contra el reloj.
+    </p>
+
+    <h3>Puntos, niveles y racha</h3>
+    <ul class="lista">
+      <li><strong>Puntos.</strong> Se ganan solo al responder correctamente. Una respuesta equivocada no resta puntos.</li>
+      <li><strong>Niveles.</strong> Cada <strong>500 puntos</strong> se sube un nivel. La barra del panel muestra cuánto falta para el siguiente.</li>
+      <li><strong>Racha.</strong> Cuenta los días seguidos practicando. Si se practica un día y al siguiente también, sube; si se deja pasar más de un día, vuelve a empezar en 1.</li>
+    </ul>
+
+    <h3>Logros</h3>
+    <p>Hay cuatro insignias que se desbloquean solas al cumplir la meta:</p>
+
+    <div class="tabla-envoltura">
+      <table>
+        <thead>
+          <tr><th>Logro</th><th>Cómo se consigue</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>🏅 Primera lectura</td><td>Completar la primera actividad</td></tr>
+          <tr><td>🔥 Racha de 3 días</td><td>Practicar tres días seguidos</td></tr>
+          <tr><td>🚀 10 actividades</td><td>Completar diez actividades</td></tr>
+          <tr><td>👑 Nivel 5</td><td>Alcanzar el nivel 5</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3>Tabla de posiciones</h3>
+    <p>
+      El botón <strong>🏆 Ranking</strong> muestra cómo va el estudiante frente a sus
+      compañeros. Se compite <em>solo dentro del mismo curso</em>, porque cada grado
+      tiene lecturas de dificultad distinta y comparar entre grados sería injusto.
+    </p>
+    <p>
+      Aparecen los primeros 20 puestos y, si el estudiante no está entre ellos, su
+      propia fila se muestra aparte para que siempre sepa en qué posición va.
+    </p>
+  </section>
+
+  <!-- ============ JUEGO ============ -->
+  <section id="juego">
+    <div class="encabezado-seccion">
+      <span class="insignia coral">❤️</span>
+      <h2 class="titulo-seccion">Cómo funciona el juego</h2>
+    </div>
+
+    <p>
+      La mecánica está inspirada en aplicaciones como Duolingo y tiene una idea
+      central: <strong>se responde una sola vez y se sigue adelante</strong>. No se
+      puede adivinar repitiendo hasta acertar.
+    </p>
+
+    <h3>Una actividad, paso a paso</h3>
+    <ol class="pasos">
+      <li>El estudiante escoge un módulo y empieza la primera actividad.</li>
+      <li>Aparece la pregunta con sus opciones. <strong>El orden de las opciones cambia cada vez</strong>, así que memorizar «era la segunda» no sirve de nada.</li>
+      <li>Responde. Esa respuesta es definitiva: no hay botón de reintentar.</li>
+      <li>La plataforma le dice si acertó y <strong>siempre le muestra la explicación</strong>, haya acertado o no. Ahí está el aprendizaje real.</li>
+      <li>Pulsa «Siguiente» y avanza. Si acertó, suma sus puntos.</li>
+    </ol>
+
+    <h3>Los corazones</h3>
+    <p>
+      Cada lección empieza con <strong>2 corazones</strong>. Cada respuesta
+      equivocada cuesta uno. Los corazones <em>no se recuperan al pasar de
+      pregunta</em>: son para toda la lección, así que hay que leer con calma.
+    </p>
+    <p>
+      Al quedarse sin corazones no se puede continuar de una vez. Ahí aparecen dos
+      caminos:
+    </p>
+    <ul class="lista">
+      <li><strong>Volver al panel</strong> y empezar la lección de nuevo más tarde.</li>
+      <li><strong>Hacer un repaso</strong> para recuperar un corazón y seguir.</li>
+    </ul>
+
+    <h3>El repaso</h3>
+    <p>
+      El repaso es la única parte donde <strong>sí se puede intentar varias veces
+      hasta acertar</strong>, porque su objetivo es que el estudiante entienda lo que
+      falló, no medirlo. Al acertar recupera un corazón y continúa la lección donde
+      iba.
+    </p>
+    <p>
+      El repaso <strong>no otorga puntos</strong>. Sirve para no quedarse
+      atascado, no para acumular puntaje.
+    </p>
+
+    <div class="aviso consejo">
+      <span class="simbolo">💡</span>
+      <div>
+        <span class="rotulo">Para explicarlo en clase</span>
+        <p>
+          «Tienes dos oportunidades por lección. Si las pierdes, repasas lo que
+          fallaste y recuperas una. Lee bien antes de responder, porque no se puede
+          devolver.»
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ VOZ ============ -->
+  <section id="voz">
+    <div class="encabezado-seccion">
+      <span class="insignia morada">🎙️</span>
+      <h2 class="titulo-seccion">Lectura en voz alta</h2>
+    </div>
+
+    <p>
+      En el módulo de fluidez, el estudiante lee un texto y la plataforma le
+      cronometra cuánto tarda. Con eso calcula sus <strong>palabras por minuto
+      (ppm)</strong> y las compara con la meta de su grado.
+    </p>
+
+    <h3>Cómo se mide normalmente</h3>
+    <ol class="pasos">
+      <li>Pulsa «Estoy listo, ¡a leer!» y arranca el cronómetro.</li>
+      <li>Lee el texto en voz alta a su ritmo normal.</li>
+      <li>Pulsa «Terminé de leer» y se detiene el cronómetro.</li>
+      <li>Ve a cuántas palabras por minuto leyó y si alcanzó la meta de su curso.</li>
+    </ol>
+
+    <h3>Verificación por voz (opcional)</h3>
+    <p>
+      Antes de empezar aparece una casilla que el estudiante puede marcar
+      voluntariamente: <strong>grabar su voz mientras lee</strong>. Si la marca, al
+      terminar la lectura la plataforma escucha la grabación y le dice
+      <strong>qué porcentaje de las palabras del texto reconoció</strong>.
+    </p>
+    <p>
+      Sirve para detectar algo que el cronómetro solo no ve: un estudiante puede ir
+      rápido pero saltándose palabras. Esta función lo hace visible.
+    </p>
+
+    <ul class="lista">
+      <li><strong>Es totalmente opcional.</strong> Si no se marca la casilla, todo funciona igual que siempre.</li>
+      <li><strong>No afecta la nota.</strong> No cambia los puntos ni los corazones: es únicamente un comentario adicional.</li>
+      <li><strong>El audio no se guarda.</strong> Se envía una sola vez para analizarlo y no queda almacenado.</li>
+      <li><strong>Si falla el micrófono</strong>, aparece un aviso y la lectura continúa con normalidad.</li>
+    </ul>
+
+    <div class="aviso ojo">
+      <span class="simbolo">⚠️</span>
+      <div>
+        <span class="rotulo">Importante antes de usarla con menores de edad</span>
+        <p>
+          Esta función graba la voz de estudiantes menores de edad. Aunque el audio
+          no se almacena y la casilla es voluntaria, se recomienda
+          <strong>informar a los acudientes y contar con su autorización</strong>
+          antes de promoverla en clase, conforme a la normativa colombiana de
+          protección de datos de menores.
+        </p>
+        <p>
+          Si se prefiere no usarla, basta con indicarles a los estudiantes que dejen
+          la casilla sin marcar: la plataforma funciona completa sin ella.
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ DOCENTES ============ -->
+  <section id="docentes">
+    <div class="encabezado-seccion">
+      <span class="insignia morada">👩‍🏫</span>
+      <h2 class="titulo-seccion">Guía para docentes</h2>
+    </div>
+
+    <p>
+      El panel del docente se organiza en <strong>cinco pestañas</strong>. Cada
+      docente ve únicamente <strong>los cursos que el administrador le asignó</strong>;
+      si todavía no tiene ninguno, verá un mensaje pidiendo que se los asignen en
+      lugar de una tabla vacía.
+    </p>
+
+    <div class="funcion">
+      <h4>📊 Seguimiento</h4>
+      <p>
+        La pestaña principal. Lista a los estudiantes del curso con sus puntos,
+        nivel, racha y cuántas actividades ha completado cada uno. Es la vista para
+        responder «¿quién está practicando y quién no?».
+      </p>
+      <p>
+        Incluye la tarjeta <strong>«Comprensión por habilidad»</strong>, que separa
+        los resultados en tres tipos de pregunta: <strong>literal</strong> (lo que el
+        texto dice explícitamente), <strong>inferencial</strong> (lo que se deduce) y
+        <strong>crítica</strong> (opinar y evaluar el texto). Así se ve si el grupo
+        falla al deducir o al opinar, que es información mucho más útil que un
+        porcentaje general.
+      </p>
+      <p>
+        Desde aquí también se descargan los reportes en <strong>CSV</strong> (para
+        abrir en Excel) y en <strong>PDF</strong> (para imprimir o adjuntar), y se
+        restablecen contraseñas.
+      </p>
+    </div>
+
+    <div class="funcion">
+      <h4>📎 Documentos</h4>
+      <p>
+        Permite subir material del colegio —PDF, Word o texto— como planes de área,
+        guías o lecturas. Al subirlo, la plataforma extrae su texto y lo usa para
+        alimentar al asistente. Los documentos son privados: los estudiantes no
+        tienen acceso a esta sección.
+      </p>
+    </div>
+
+    <div class="funcion">
+      <h4>🦉 Asistente IA</h4>
+      <p>
+        Un chat para consultarle al asistente sobre el curso. A diferencia de un
+        chatbot genérico, este <strong>conoce el desempeño real del grupo</strong>,
+        los documentos que se hayan subido y el estudio pedagógico del proyecto. Se
+        le puede preguntar en qué está fallando el curso o pedirle ideas de refuerzo
+        para un tema puntual.
+      </p>
+    </div>
+
+    <div class="funcion">
+      <h4>🧪 Actividades con IA</h4>
+      <p>
+        Genera propuestas de actividades nuevas para un curso y módulo. La regla más
+        importante: <strong>nada llega a los estudiantes sin que el docente lo
+        apruebe</strong>. Cada propuesta queda pendiente de revisión y ofrece tres
+        opciones:
+      </p>
+      <p>
+        <strong>Aprobar</strong> (se publica y los estudiantes la ven),
+        <strong>Rechazar</strong> (se descarta), o <strong>Pedir que la
+        regenere</strong> escribiendo una sugerencia en palabras propias —por
+        ejemplo «usa un ejemplo del campo» o «está muy fácil para once»— y la IA la
+        reescribe siguiendo esa indicación.
+      </p>
+    </div>
+
+    <div class="funcion">
+      <h4>✏️ Editar actividades</h4>
+      <p>
+        Permite corregir las actividades ya publicadas: <strong>editar</strong> su
+        texto, preguntas o respuestas; <strong>reordenarlas</strong> para cambiar en
+        qué orden las ven los estudiantes; o <strong>eliminarlas</strong>. Útil para
+        arreglar una errata o retirar una lectura que no funcionó en clase.
+      </p>
+    </div>
+
+    <h3>Crear la cuenta de un estudiante</h3>
+    <p>
+      En la pestaña <strong>📊 Seguimiento</strong>, junto al título «Estudiantes»,
+      está el botón <strong>+ Nuevo estudiante</strong>. Pide cuatro datos:
+    </p>
+    <ul class="lista">
+      <li><strong>Nombre completo</strong> — como aparecerá en las listas y reportes.</li>
+      <li><strong>Usuario</strong> — con el que iniciará sesión (por ejemplo, <code>ana.perez</code>).</li>
+      <li><strong>Curso</strong> — solo aparecen los cursos asignados al docente.</li>
+      <li><strong>Contraseña</strong> — <em>opcional</em>: si se deja vacía, la plataforma genera una automáticamente.</li>
+    </ul>
+    <p>
+      Al crear la cuenta aparece un aviso verde con <strong>el usuario y la
+      contraseña</strong>. Hay que anotarlos en ese momento y entregárselos al
+      estudiante, porque la contraseña no se vuelve a mostrar. Si se pierde, se
+      genera otra con el botón de restablecer.
+    </p>
+
+    <h3>Restablecer la contraseña de un estudiante</h3>
+    <p>
+      En la lista de seguimiento, cada estudiante tiene un botón
+      <strong>🔑 Reset</strong>. Al pulsarlo, la plataforma genera una contraseña
+      temporal y la muestra <em>una sola vez</em> en un aviso verde.
+    </p>
+    <p>
+      Hay que <strong>copiarla o anotarla en ese momento</strong> y entregársela al
+      estudiante, porque al cerrar el aviso no se puede volver a ver. Si se pierde,
+      simplemente se genera otra.
+    </p>
+  </section>
+
+  <!-- ============ ADMINISTRADORES ============ -->
+  <section id="administradores">
+    <div class="encabezado-seccion">
+      <span class="insignia">⚙️</span>
+      <h2 class="titulo-seccion">Guía para administradores</h2>
+    </div>
+
+    <p>
+      El panel de administración gestiona <strong>todas las cuentas</strong> de la
+      plataforma sin necesidad de tocar la base de datos. Desde ahí se crean, editan
+      y eliminan estudiantes, docentes y otros administradores.
+    </p>
+
+    <h3>Asignar cursos a los docentes</h3>
+    <p>
+      Es la tarea más importante del administrador. En la pestaña de docentes se
+      seleccionan los cursos de cada uno (se pueden marcar varios). Un docente
+      <strong>solo verá los estudiantes de los cursos que tenga asignados</strong>,
+      así que sin esta asignación su panel aparecerá vacío. El administrador, en
+      cambio, siempre ve todos los cursos.
+    </p>
+
+    <h3>Protecciones incorporadas</h3>
+    <ul class="lista">
+      <li>No se puede eliminar la propia cuenta con la que se está trabajando.</li>
+      <li>No se puede eliminar al último administrador que quede, para que el colegio nunca se quede sin acceso.</li>
+      <li>Al eliminar un estudiante se borra también todo su historial de intentos y logros, en una sola operación.</li>
+    </ul>
+
+    <div class="aviso ojo">
+      <span class="simbolo">⚠️</span>
+      <div>
+        <span class="rotulo">Cambiar la contraseña inicial</span>
+        <p>
+          La plataforma se instala con una cuenta de administrador por defecto. Antes
+          de usarla con estudiantes reales es <strong>indispensable cambiar esa
+          contraseña</strong> desde el mismo panel de administración.
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ TABLAS ============ -->
+  <section id="tablas">
+    <div class="encabezado-seccion">
+      <span class="insignia">📐</span>
+      <h2 class="titulo-seccion">Tablas de referencia</h2>
+    </div>
+
+    <h3>Puntos por actividad</h3>
+    <div class="tabla-envoltura">
+      <table>
+        <thead>
+          <tr><th>Módulo</th><th>Puntos</th><th>Por qué</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>🔤 Reconocer palabras</td><td class="num">20</td><td>Ejercicio breve de reconocimiento</td></tr>
+          <tr><td>📖 Comprensión lectora</td><td class="num">20</td><td>Requiere leer y razonar sobre el texto</td></tr>
+          <tr><td>⏱️ Fluidez lectora</td><td class="num">30</td><td>Exige leer en voz alta contra el reloj</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p>
+      El puntaje es igual en todos los grados. Lo que sube con el curso es la
+      <strong>dificultad del contenido</strong>, no el valor de cada actividad.
+    </p>
+
+    <h3>Metas de fluidez por grado</h3>
+    <p>
+      Cada grado tiene su propia meta de velocidad lectora, tomada del estudio
+      pedagógico del proyecto (Estándares Básicos del MEN y DBA v2).
+    </p>
+    <div class="tabla-envoltura">
+      <table>
+        <thead>
+          <tr><th>Curso</th><th>Meta (palabras por minuto)</th><th>Longitud del texto</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><strong>6°</strong></td><td class="num">95 – 115 ppm</td><td class="num">65 – 85 palabras</td></tr>
+          <tr><td><strong>7°</strong></td><td class="num">110 – 125 ppm</td><td class="num">85 – 95 palabras</td></tr>
+          <tr><td><strong>8°</strong></td><td class="num">120 – 140 ppm</td><td class="num">95 – 110 palabras</td></tr>
+          <tr><td><strong>9°</strong></td><td class="num">130 – 150 ppm</td><td class="num">105 – 120 palabras</td></tr>
+          <tr><td><strong>10°</strong></td><td class="num">140 – 160 ppm</td><td class="num">120 – 130 palabras</td></tr>
+          <tr><td><strong>11°</strong></td><td class="num">150 – 170 ppm</td><td class="num">130 – 150 palabras</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3>Contenido disponible</h3>
+    <div class="tabla-envoltura">
+      <table>
+        <thead>
+          <tr><th>Concepto</th><th>Cantidad</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Grados atendidos</td><td class="num">6 (de 6° a 11°)</td></tr>
+          <tr><td>Módulos por grado</td><td class="num">3</td></tr>
+          <tr><td>Actividades por módulo</td><td class="num">8</td></tr>
+          <tr><td><strong>Total de actividades</strong></td><td class="num"><strong>144</strong></td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p>
+      A ese banco base se le pueden sumar las actividades nuevas que el docente
+      apruebe desde la pestaña de actividades con IA.
+    </p>
+  </section>
+
+  <!-- ============ RECOMENDACIONES ============ -->
+  <section id="recomendaciones">
+    <div class="encabezado-seccion">
+      <span class="insignia coral">✅</span>
+      <h2 class="titulo-seccion">Antes de usarla en clase</h2>
+    </div>
+
+    <p>Tres puntos que conviene resolver antes de ponerla en manos de un grupo:</p>
+
+    <div class="aviso ojo">
+      <span class="simbolo">1</span>
+      <div>
+        <span class="rotulo">Revisar el contenido</span>
+        <p>
+          Las 144 actividades se redactaron con apoyo de inteligencia artificial
+          siguiendo los estándares del MEN, pero <strong>deben ser revisadas por las
+          autoras del proyecto o por la docente</strong> antes de usarse en un salón
+          real. La pestaña «Editar actividades» permite corregir cualquier cosa que
+          no encaje.
+        </p>
+      </div>
+    </div>
+
+    <div class="aviso ojo">
+      <span class="simbolo">2</span>
+      <div>
+        <span class="rotulo">Definir la política sobre la grabación de voz</span>
+        <p>
+          Decidir si se va a usar la verificación por voz y, en caso afirmativo,
+          gestionar la autorización de los acudientes. La plataforma funciona
+          completa sin esta función.
+        </p>
+      </div>
+    </div>
+
+    <div class="aviso ojo">
+      <span class="simbolo">3</span>
+      <div>
+        <span class="rotulo">Preparar las cuentas</span>
+        <p>
+          Cambiar la contraseña del administrador, crear las cuentas de los docentes
+          y <strong>asignarles sus cursos</strong>. Sin cursos asignados, el panel del
+          docente aparece vacío y no podrá crear estudiantes.
+        </p>
+        <p>
+          Después, cada docente crea las cuentas de sus estudiantes desde el panel.
+          Conviene <strong>acordar un formato de usuario</strong> antes de empezar
+          (por ejemplo <code>nombre.apellido</code>) para que sea fácil de recordar y
+          no se repita entre cursos.
+        </p>
+      </div>
+    </div>
+
+    <h3>Una rutina que funciona</h3>
+    <p>
+      La plataforma da mejores resultados con <strong>práctica corta y frecuente</strong>
+      que con sesiones largas y esporádicas. Diez minutos al inicio de la clase
+      alcanzan para una o dos actividades, y la racha se encarga de sostener el
+      hábito.
+    </p>
+  </section>
+
+  <footer class="cierre">
+    <p>
+      <strong>LectoSmart</strong> — Proyecto de grado, especialidad de Informática.
+      I.E. Técnica Valle de Tenza, Guateque (2026).
+      Autoras: Danna Valentina Ramírez y Aileen Celeste Guevara.
+    </p>
+  </footer>
+
+</div>
+</body>
+</html>

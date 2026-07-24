@@ -4,7 +4,11 @@ import { C } from "../theme/colors";
 import { AppHeader } from "../components/AppHeader";
 import { BarraProgresoActividad } from "../components/BarraProgresoActividad";
 import { PreguntaOpciones } from "../components/PreguntaOpciones";
+import { SinCorazones } from "../components/SinCorazones";
+import { RepasoPregunta } from "../components/RepasoPregunta";
 import { apiFetch } from "../api/client";
+
+const CORAZONES_INICIALES = 2;
 
 export default function ModuloPalabras() {
   const { id } = useParams();
@@ -13,7 +17,10 @@ export default function ModuloPalabras() {
   const [actividad, setActividad] = useState(null);
   const [lista, setLista] = useState([]);
   const [resultado, setResultado] = useState(null);
-  const [vidas, setVidas] = useState(3);
+  const [vidas, setVidas] = useState(CORAZONES_INICIALES);
+  const [sinCorazones, setSinCorazones] = useState(false);
+  const [enRepaso, setEnRepaso] = useState(false);
+  const [falladas, setFalladas] = useState([]); // ids de actividades falladas en esta lección
   const [enviando, setEnviando] = useState(false);
   const [error, setError] = useState(null);
 
@@ -22,7 +29,9 @@ export default function ModuloPalabras() {
   useEffect(() => {
     let activo = true;
     setResultado(null);
-    setVidas(3);
+    // Los corazones NO se reinician al pasar de pregunta: se comparten
+    // durante toda la lección (se restablecen solo si el componente se
+    // vuelve a montar, es decir, si el estudiante sale y reingresa).
     setError(null);
 
     async function cargar() {
@@ -52,12 +61,16 @@ export default function ModuloPalabras() {
         body: { respuesta: valor },
         onUnauthorized: irAIngreso,
       });
-      if (!data.correcto) setVidas((v) => Math.max(0, v - 1));
+      if (!data.correcto) {
+        setVidas((v) => Math.max(0, v - 1));
+        setFalladas((f) => [...f, id]);
+      }
       setResultado({
         seleccionada: valor,
         correcto: data.correcto,
         puntosGanados: data.puntosGanados,
         respuestaCorrecta: data.respuestaCorrecta,
+        explicacion: data.explicacion,
       });
     } catch (err) {
       setError(err.message || "No se pudo enviar tu respuesta");
@@ -66,9 +79,23 @@ export default function ModuloPalabras() {
     }
   };
 
+  // Al recuperar un corazón repasando, se sigue la lección desde la
+  // actividad que estaba en pantalla cuando se acabaron los corazones.
+  const corazonRecuperado = () => {
+    setVidas(1);
+    setSinCorazones(false);
+    setEnRepaso(false);
+    const siguiente = lista.find((a) => a.orden > actividad.orden);
+    if (siguiente) navigate(`/palabras/${siguiente.id}`);
+    else navigate("/panel");
+  };
+
+  // Sin reintentos: cada pregunta se responde una sola vez (acierte o
+  // falle) y siempre se avanza a la siguiente, salvo que se acaben los
+  // corazones de la lección.
   const continuar = () => {
-    if (!resultado?.correcto) {
-      setResultado(null);
+    if (vidas <= 0) {
+      setSinCorazones(true);
       return;
     }
     const siguiente = lista.find((a) => a.orden > actividad.orden);
@@ -96,6 +123,30 @@ export default function ModuloPalabras() {
         <AppHeader right={null} />
         <p className="ls-body text-center mt-10" style={{ color: C.gris }}>Cargando actividad…</p>
       </div>
+    );
+  }
+
+  if (sinCorazones) {
+    if (enRepaso) {
+      return (
+        <div>
+          <AppHeader right={null} />
+          <div className="max-w-3xl mx-auto px-6 pb-20 pt-6">
+            <RepasoPregunta
+              actividadId={falladas[0]}
+              onUnauthorized={irAIngreso}
+              onRecuperado={corazonRecuperado}
+              onCancelar={() => navigate("/panel")}
+            />
+          </div>
+        </div>
+      );
+    }
+    return (
+      <SinCorazones
+        onVolver={() => navigate("/panel")}
+        onRepasar={falladas.length > 0 ? () => setEnRepaso(true) : undefined}
+      />
     );
   }
 

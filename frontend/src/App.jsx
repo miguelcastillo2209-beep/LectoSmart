@@ -7,6 +7,7 @@ import Login from "./pages/Login";
 import LoginDocente from "./pages/LoginDocente";
 import LoginAdmin from "./pages/LoginAdmin";
 import PanelEstudiante from "./pages/PanelEstudiante";
+import Ranking from "./pages/Ranking";
 import PanelDocente from "./pages/PanelDocente";
 import PanelAdmin from "./pages/PanelAdmin";
 import ModuloPalabras from "./pages/ModuloPalabras";
@@ -28,6 +29,14 @@ export default function App() {
               element={
                 <RutaPrivada rol="estudiante">
                   <PanelEstudiante />
+                </RutaPrivada>
+              }
+            />
+            <Route
+              path="/ranking"
+              element={
+                <RutaPrivada rol="estudiante">
+                  <Ranking />
                 </RutaPrivada>
               }
             />

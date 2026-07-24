@@ -43,19 +43,28 @@ export function PreguntaOpciones({ opciones, resultado, onElegir, deshabilitado,
 
       {resultado && (
         <div
-          className="mt-5 rounded-2xl px-5 py-4 flex items-center justify-between flex-wrap gap-3"
+          className="mt-5 rounded-2xl px-5 py-4"
           style={{ background: resultado.correcto ? C.verdeSuave : C.coralSuave, border: `2px solid ${resultado.correcto ? C.verde : C.coral}` }}
         >
           <p className="ls-display font-bold" style={{ color: resultado.correcto ? "#1B7A5B" : "#C2453B" }}>
-            {resultado.correcto ? `¡Muy bien! +${resultado.puntosGanados} puntos ⭐` : "Casi… vuelve a intentarlo 💪"}
+            {resultado.correcto
+              ? `¡Muy bien! +${resultado.puntosGanados} puntos ⭐`
+              : `No era esa. La respuesta correcta es: "${resultado.respuestaCorrecta}"`}
           </p>
-          <button
-            onClick={onContinuar}
-            className="ls-btn ls-body text-sm font-bold px-5 py-2.5 rounded-full"
-            style={{ background: resultado.correcto ? C.verde : C.coral, color: "#fff" }}
-          >
-            {resultado.correcto ? "Siguiente →" : "Intentar de nuevo"}
-          </button>
+          {resultado.explicacion && (
+            <p className="ls-body text-sm mt-2 leading-relaxed" style={{ color: resultado.correcto ? "#1B7A5B" : "#C2453B" }}>
+              {resultado.explicacion}
+            </p>
+          )}
+          <div className="flex justify-end mt-3">
+            <button
+              onClick={onContinuar}
+              className="ls-btn ls-body text-sm font-bold px-5 py-2.5 rounded-full"
+              style={{ background: resultado.correcto ? C.verde : C.coral, color: "#fff" }}
+            >
+              Siguiente →
+            </button>
+          </div>
         </div>
       )}
     </div>

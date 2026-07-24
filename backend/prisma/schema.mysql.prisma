@@ -1,0 +1,131 @@
+// Esquema de PRODUCCIÓN (VPS): MySQL.
+// Es una copia de schema.prisma con provider mysql y @db.Text en los
+// campos largos (en MySQL un String normal es VARCHAR(191)).
+// ⚠️ Si cambias los modelos en schema.prisma, replica el cambio aquí.
+// Se usa en el servidor con:
+//   npx prisma generate --schema prisma/schema.mysql.prisma
+//   npx prisma db push  --schema prisma/schema.mysql.prisma
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model Estudiante {
+  id                String    @id @default(cuid())
+  nombre            String
+  usuario           String    @unique
+  passwordHash      String
+  curso             String
+  puntos            Int       @default(0)
+  racha             Int       @default(0)
+  ultimaActividadEn DateTime?
+  createdAt         DateTime  @default(now())
+
+  intentos Intento[]
+  logros   EstudianteLogro[]
+}
+
+model Docente {
+  id              String   @id @default(cuid())
+  nombre          String
+  usuario         String   @unique
+  passwordHash    String
+  // Sin @db.Text: MySQL no permite DEFAULT en columnas TEXT, y la lista
+  // de cursos ('["6°",...,"11°"]') cabe de sobra en VARCHAR(191).
+  cursosAsignados String   @default("[]")
+  createdAt       DateTime @default(now())
+}
+
+model Administrador {
+  id           String   @id @default(cuid())
+  nombre       String
+  usuario      String   @unique
+  passwordHash String
+  createdAt    DateTime @default(now())
+}
+
+model Actividad {
+  id         String   @id @default(cuid())
+  modulo     String
+  curso      String
+  titulo     String
+  contenido  String   @db.Text
+  orden      Int
+  puntosBase Int      @default(20)
+  createdAt  DateTime @default(now())
+
+  intentos Intento[]
+
+  @@unique([modulo, curso, orden])
+}
+
+model Intento {
+  id            String   @id @default(cuid())
+  estudianteId  String
+  actividadId   String
+  correcto      Boolean
+  puntosGanados Int      @default(0)
+  metadata      String?  @db.Text
+  creadoEn      DateTime @default(now())
+
+  estudiante Estudiante @relation(fields: [estudianteId], references: [id])
+  actividad  Actividad  @relation(fields: [actividadId], references: [id])
+
+  @@index([estudianteId])
+  @@index([actividadId])
+}
+
+model Logro {
+  id          String   @id @default(cuid())
+  codigo      String   @unique
+  nombre      String
+  icono       String
+  descripcion String
+  criterio    String   @db.Text
+  createdAt   DateTime @default(now())
+
+  estudiantes EstudianteLogro[]
+}
+
+model EstudianteLogro {
+  estudianteId String
+  logroId      String
+  conseguidoEn DateTime @default(now())
+
+  estudiante Estudiante @relation(fields: [estudianteId], references: [id])
+  logro      Logro      @relation(fields: [logroId], references: [id])
+
+  @@id([estudianteId, logroId])
+}
+
+model PropuestaActividad {
+  id                 String   @id @default(cuid())
+  modulo             String
+  curso              String
+  titulo             String
+  contenido          String   @db.Text
+  estado             String   @default("pendiente")
+  basadaEnDocumentos Boolean  @default(false)
+  sugerenciaDocente  String?  @db.Text
+  creadaPor          String
+  actividadId        String?
+  createdAt          DateTime @default(now())
+  actualizadaEn      DateTime @updatedAt
+}
+
+model Documento {
+  id            String   @id @default(cuid())
+  nombre        String
+  archivo       String
+  mimeType      String
+  tamano        Int
+  descripcion   String?
+  textoExtraido String?  @db.LongText
+  subidoPor     String
+  createdAt     DateTime @default(now())
+}

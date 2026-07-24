@@ -3,7 +3,7 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
+  provider = "sqlite"
   url      = env("DATABASE_URL")
 }
 
@@ -110,4 +110,42 @@ model EstudianteLogro {
   logro      Logro      @relation(fields: [logroId], references: [id])
 
   @@id([estudianteId, logroId])
+}
+
+// Actividad generada por la IA a partir de los documentos subidos (y del
+// estudio pedagógico), pendiente de revisión de un docente/administrador
+// antes de publicarse a los estudiantes. Solo si se aprueba se crea la
+// Actividad real; el docente también puede pedir que se regenere dando
+// una sugerencia de mejora, o rechazarla.
+model PropuestaActividad {
+  id                String   @id @default(cuid())
+  modulo            String
+  curso             String
+  titulo            String
+  contenido         String // mismo formato que Actividad.contenido, incluye "explicacion"
+  estado            String   @default("pendiente") // "pendiente" | "aprobada" | "rechazada"
+  basadaEnDocumentos Boolean @default(false)
+  sugerenciaDocente String? // última sugerencia dada para regenerar, o motivo de rechazo
+  creadaPor         String // nombre del docente/admin que pidió la generación
+  actividadId       String? // id de la Actividad publicada, una vez aprobada
+  createdAt         DateTime @default(now())
+  actualizadaEn     DateTime @updatedAt
+}
+
+// Documentos de apoyo que suben docentes/administradores (solo visibles
+// para esos roles). El texto se extrae al subir el archivo y se usa como
+// contexto del asistente IA (RAG) — así no hay que re-procesar el
+// archivo en cada consulta.
+model Documento {
+  id            String   @id @default(cuid())
+  nombre        String // nombre original del archivo
+  archivo       String // nombre del archivo en disco (uploads/)
+  mimeType      String
+  tamano        Int // bytes
+  descripcion   String?
+  // Texto extraído del archivo (PDF/Word/texto plano) para el asistente
+  // IA; null si el formato no permitió extraer texto.
+  textoExtraido String?
+  subidoPor     String // nombre del docente/admin que lo subió
+  createdAt     DateTime @default(now())
 }

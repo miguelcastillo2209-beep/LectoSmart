@@ -6,4 +6,8 @@ build/
 !.env.example
 backend/prisma/dev.db
 backend/prisma/dev.db-journal
+backend/prisma/dev.db.respaldo-*
 *.log
+
+# Archivos subidos por docentes (datos reales, no van al repo)
+backend/uploads/

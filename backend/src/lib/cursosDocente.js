@@ -26,4 +26,11 @@ function parseCursos(cursosAsignados) {
   }
 }
 
-module.exports = { validarCursos, parseCursos };
+// null = sin restricción (administrador); arreglo = solo esos cursos (docente).
+async function cursosPermitidosPara(prisma, usuario) {
+  if (usuario.rol === "administrador") return null;
+  const docente = await prisma.docente.findUniqueOrThrow({ where: { id: usuario.id } });
+  return parseCursos(docente.cursosAsignados);
+}
+
+module.exports = { validarCursos, parseCursos, cursosPermitidosPara };

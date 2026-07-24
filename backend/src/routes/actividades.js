@@ -5,6 +5,7 @@ const { MODULOS } = require("../lib/constants");
 const { contenidoPublico } = require("../lib/contenido");
 const { calcularNivel, calcularRacha } = require("../services/puntos");
 const { evaluarLogros } = require("../services/logros");
+const { estudianteActual } = require("../lib/estudianteActual");
 
 const router = Router();
 
@@ -14,7 +15,8 @@ router.get("/modulos/:modulo/actividades", verifyToken, requireRole("estudiante"
     return res.status(400).json({ error: "Módulo inválido" });
   }
 
-  const estudiante = await prisma.estudiante.findUniqueOrThrow({ where: { id: req.usuario.id } });
+  const estudiante = await estudianteActual(req, res);
+  if (!estudiante) return;
 
   const [actividades, intentosCorrectos] = await Promise.all([
     prisma.actividad.findMany({ where: { modulo, curso: estudiante.curso }, orderBy: { orden: "asc" } }),
@@ -39,8 +41,9 @@ router.get("/modulos/:modulo/actividades", verifyToken, requireRole("estudiante"
 router.get("/actividades/:id", verifyToken, requireRole("estudiante"), async (req, res) => {
   const [actividad, estudiante] = await Promise.all([
     prisma.actividad.findUnique({ where: { id: req.params.id } }),
-    prisma.estudiante.findUniqueOrThrow({ where: { id: req.usuario.id } }),
+    estudianteActual(req, res),
   ]);
+  if (!estudiante) return; // ya respondió 401
   if (!actividad) {
     return res.status(404).json({ error: "Actividad no encontrada" });
   }
@@ -61,8 +64,9 @@ router.get("/actividades/:id", verifyToken, requireRole("estudiante"), async (re
 router.post("/actividades/:id/intentos", verifyToken, requireRole("estudiante"), async (req, res) => {
   const [actividad, estudianteAntes] = await Promise.all([
     prisma.actividad.findUnique({ where: { id: req.params.id } }),
-    prisma.estudiante.findUniqueOrThrow({ where: { id: req.usuario.id } }),
+    estudianteActual(req, res),
   ]);
+  if (!estudianteAntes) return; // ya respondió 401
   if (!actividad) {
     return res.status(404).json({ error: "Actividad no encontrada" });
   }
@@ -113,6 +117,9 @@ router.post("/actividades/:id/intentos", verifyToken, requireRole("estudiante"),
     correcto,
     puntosGanados,
     respuestaCorrecta: contenido.respuesta ?? null,
+    // Solo tiene sentido para PALABRAS/COMPRENSION; en FLUIDEZ la
+    // retroalimentación es el resultado de ppm frente a la meta.
+    explicacion: contenido.explicacion ?? null,
     metadata,
     estudiante: { puntos: estudiante.puntos, nivel, puntosEnNivel, metaNivel, racha: estudiante.racha },
     logrosNuevos: logrosNuevos.map((l) => ({ codigo: l.codigo, nombre: l.nombre, icono: l.icono })),

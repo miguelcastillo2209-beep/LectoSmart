@@ -2,25 +2,98 @@ import { useEffect, useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { C } from "../theme/colors";
 import { AppHeader } from "../components/AppHeader";
-import { apiFetch } from "../api/client";
+import { apiFetch, apiDescargar } from "../api/client";
 import { useAuth } from "../context/AuthContext";
+import DocumentosPanel from "../components/DocumentosPanel";
+import AsistenteIA from "../components/AsistenteIA";
+import PropuestasIA from "../components/PropuestasIA";
+import GestionActividades from "../components/GestionActividades";
 
 const CURSOS = ["6°", "7°", "8°", "9°", "10°", "11°"];
 
+const SECCIONES = [
+  { id: "seguimiento", etiqueta: "📊 Seguimiento" },
+  { id: "documentos", etiqueta: "📎 Documentos" },
+  { id: "asistente", etiqueta: "🦉 Asistente IA" },
+  { id: "propuestas", etiqueta: "🧪 Actividades con IA" },
+  { id: "gestion", etiqueta: "✏️ Editar actividades" },
+];
+
 const colorComp = (v) => (v >= 70 ? C.verde : v >= 50 ? "#E8A13C" : C.coral);
+
+const NIVEL_INFO = {
+  literal: { etiqueta: "Literal", descripcion: "entiende lo que el texto dice" },
+  inferencial: { etiqueta: "Inferencial", descripcion: "deduce lo que el texto no dice directamente" },
+  critico: { etiqueta: "Crítico", descripcion: "evalúa, compara y detecta falacias" },
+};
 
 export default function PanelDocente() {
   const { perfil, rol, cerrarSesion } = useAuth();
   const navigate = useNavigate();
 
+  const [seccion, setSeccion] = useState("seguimiento");
   const [resumen, setResumen] = useState(null);
   const [estudiantes, setEstudiantes] = useState([]);
   const [busqueda, setBusqueda] = useState("");
   const [curso, setCurso] = useState("");
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState(null);
+  const [passwordGenerada, setPasswordGenerada] = useState(null); // { nombre, password }
+  const [reseteando, setReseteando] = useState(null); // id del estudiante en proceso
+  const [recarga, setRecarga] = useState(0); // fuerza recargar la lista tras crear
+  const [mostrarNuevo, setMostrarNuevo] = useState(false);
+  const [nuevo, setNuevo] = useState({ nombre: "", usuario: "", curso: "", password: "" });
+  const [creando, setCreando] = useState(false);
+  const [credenciales, setCredenciales] = useState(null); // { nombre, usuario, password }
 
   const irAIngreso = () => navigate("/ingreso-docente");
+
+  const restablecerPassword = async (estudiante) => {
+    if (!window.confirm(`¿Generar una contraseña nueva para ${estudiante.nombre}? La contraseña anterior dejará de funcionar.`)) return;
+    setReseteando(estudiante.id);
+    setPasswordGenerada(null);
+    try {
+      const data = await apiFetch(`/docente/estudiantes/${estudiante.id}/restablecer-password`, {
+        method: "POST",
+        onUnauthorized: irAIngreso,
+      });
+      setPasswordGenerada({ nombre: estudiante.nombre, password: data.password });
+    } catch (err) {
+      setError(err.message || "No se pudo restablecer la contraseña");
+    } finally {
+      setReseteando(null);
+    }
+  };
+
+  // Crea la cuenta de un estudiante. Si no se escribe contraseña, el
+  // servidor genera una temporal; en ambos casos se muestra una sola vez
+  // para que el docente se la entregue al estudiante.
+  const crearEstudiante = async (e) => {
+    e.preventDefault();
+    setCreando(true);
+    setError(null);
+    setCredenciales(null);
+    try {
+      const data = await apiFetch("/docente/estudiantes", {
+        method: "POST",
+        body: {
+          nombre: nuevo.nombre,
+          usuario: nuevo.usuario,
+          curso: nuevo.curso,
+          ...(nuevo.password ? { password: nuevo.password } : {}),
+        },
+        onUnauthorized: irAIngreso,
+      });
+      setCredenciales({ nombre: data.nombre, usuario: data.usuario, password: data.password });
+      setNuevo({ nombre: "", usuario: "", curso: "", password: "" });
+      setMostrarNuevo(false);
+      setRecarga((n) => n + 1);
+    } catch (err) {
+      setError(err.message || "No se pudo crear el estudiante");
+    } finally {
+      setCreando(false);
+    }
+  };
 
   useEffect(() => {
     let activo = true;
@@ -53,7 +126,7 @@ export default function PanelDocente() {
       clearTimeout(timeout);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [busqueda, curso]);
+  }, [busqueda, curso, recarga]);
 
   const salir = () => {
     cerrarSesion();
@@ -97,9 +170,39 @@ export default function PanelDocente() {
         }
       />
       <div className="max-w-6xl mx-auto px-6 pb-20">
-        <h1 className="ls-display text-3xl font-extrabold" style={{ color: C.tinta }}>Seguimiento de estudiantes</h1>
-        <p className="ls-body text-sm mt-1" style={{ color: C.gris }}>Progreso general del grupo en las actividades de lectura.</p>
+        <h1 className="ls-display text-3xl font-extrabold" style={{ color: C.tinta }}>Panel del docente</h1>
+        <p className="ls-body text-sm mt-1" style={{ color: C.gris }}>Seguimiento del grupo, documentos de apoyo y asistente pedagógico.</p>
 
+        <div className="flex gap-2 mt-5 flex-wrap">
+          {SECCIONES.map((s) => (
+            <button
+              key={s.id}
+              onClick={() => setSeccion(s.id)}
+              className="ls-btn ls-body text-sm font-bold px-5 py-2.5 rounded-full"
+              style={
+                seccion === s.id
+                  ? { background: C.tinta, color: "#fff" }
+                  : { background: "#fff", color: C.gris, border: `2px solid ${C.borde}` }
+              }
+            >
+              {s.etiqueta}
+            </button>
+          ))}
+        </div>
+
+        {seccion === "documentos" && (
+          <DocumentosPanel onUnauthorized={irAIngreso} nombreUsuario={perfil?.nombre} />
+        )}
+        {seccion === "asistente" && <AsistenteIA onUnauthorized={irAIngreso} />}
+        {seccion === "propuestas" && (
+          <PropuestasIA onUnauthorized={irAIngreso} cursosDisponibles={cursosDisponibles} nombreDocente={perfil?.nombre} />
+        )}
+        {seccion === "gestion" && (
+          <GestionActividades onUnauthorized={irAIngreso} cursosDisponibles={cursosDisponibles} />
+        )}
+
+        {seccion === "seguimiento" && (
+        <>
         {error && (
           <p className="ls-body text-sm font-semibold rounded-xl px-4 py-3 mt-4" style={{ background: C.coralSuave, color: "#C2453B" }}>
             {error}
@@ -126,10 +229,153 @@ export default function PanelDocente() {
           </div>
         )}
 
+        {!sinCursosAsignados && resumen?.desglosePorNivel && (
+          <div className="mt-6 rounded-3xl p-6" style={{ background: "#fff", border: `2px solid ${C.borde}` }}>
+            <h2 className="ls-display text-lg font-bold" style={{ color: C.tinta }}>Comprensión por habilidad</h2>
+            <p className="ls-body text-xs mt-1" style={{ color: C.gris }}>
+              Aciertos en Comprensión lectora según el tipo de pregunta, no solo el promedio general.
+            </p>
+            <div className="grid sm:grid-cols-3 gap-4 mt-4">
+              {resumen.desglosePorNivel.map((d) => {
+                const info = NIVEL_INFO[d.nivel];
+                return (
+                  <div key={d.nivel} className="rounded-2xl p-4" style={{ background: C.fondo }}>
+                    <div className="flex items-center justify-between">
+                      <p className="ls-display text-sm font-bold" style={{ color: C.tinta }}>{info.etiqueta}</p>
+                      <p className="ls-display text-xl font-extrabold" style={{ color: d.pct === null ? C.gris : colorComp(d.pct) }}>
+                        {d.pct === null ? "—" : `${d.pct}%`}
+                      </p>
+                    </div>
+                    <p className="ls-body text-xs mt-0.5" style={{ color: C.gris }}>{info.descripcion}</p>
+                    <p className="ls-body text-[11px] mt-1" style={{ color: C.gris }}>{d.total} pregunta{d.total === 1 ? "" : "s"} respondida{d.total === 1 ? "" : "s"}</p>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
+        {passwordGenerada && (
+          <div className="mt-6 rounded-2xl px-5 py-4 flex items-center justify-between flex-wrap gap-3" style={{ background: "#E7F6EC", border: `2px solid ${C.verde}` }}>
+            <p className="ls-body text-sm font-semibold" style={{ color: "#2E7D46" }}>
+              Nueva contraseña de <strong>{passwordGenerada.nombre}</strong>: <code className="ls-display text-base font-extrabold tracking-wide">{passwordGenerada.password}</code> — apúntala, no se volverá a mostrar.
+            </p>
+            <button onClick={() => setPasswordGenerada(null)} className="ls-btn ls-body text-xs font-bold px-3 py-1.5 rounded-full" style={{ background: C.verde, color: "#fff" }}>
+              Entendido
+            </button>
+          </div>
+        )}
+
+        {credenciales && (
+          <div className="mt-6 rounded-2xl px-5 py-4" style={{ background: "#E7F6EC", border: `2px solid ${C.verde}` }}>
+            <div className="flex items-start justify-between flex-wrap gap-3">
+              <div>
+                <p className="ls-display text-sm font-bold mb-1" style={{ color: "#2E7D46" }}>
+                  Cuenta creada para {credenciales.nombre}
+                </p>
+                <p className="ls-body text-sm" style={{ color: "#2E7D46" }}>
+                  Usuario: <code className="ls-display text-base font-extrabold tracking-wide">{credenciales.usuario}</code>
+                  {" · "}
+                  Contraseña: <code className="ls-display text-base font-extrabold tracking-wide">{credenciales.password}</code>
+                </p>
+                <p className="ls-body text-xs mt-1.5" style={{ color: "#2E7D46" }}>
+                  Anótala y entrégasela al estudiante: no se volverá a mostrar.
+                </p>
+              </div>
+              <button onClick={() => setCredenciales(null)} className="ls-btn ls-body text-xs font-bold px-3 py-1.5 rounded-full" style={{ background: C.verde, color: "#fff" }}>
+                Entendido
+              </button>
+            </div>
+          </div>
+        )}
+
+        {!sinCursosAsignados && mostrarNuevo && (
+          <form onSubmit={crearEstudiante} className="mt-6 rounded-3xl p-6" style={{ background: "#fff", border: `2px solid ${C.azul}` }}>
+            <h3 className="ls-display text-base font-bold mb-4" style={{ color: C.tinta }}>Nuevo estudiante</h3>
+            <div className="grid gap-4 md:grid-cols-2">
+              <label className="block">
+                <span className="ls-body text-sm font-semibold" style={{ color: C.tinta }}>Nombre completo</span>
+                <input
+                  className="ls-body mt-1.5 w-full rounded-xl px-4 py-2.5 text-sm outline-none"
+                  placeholder="Ej: Sofía Rodríguez"
+                  style={{ border: `2px solid ${C.borde}`, background: C.fondo }}
+                  value={nuevo.nombre}
+                  onChange={(ev) => setNuevo({ ...nuevo, nombre: ev.target.value })}
+                  required
+                />
+              </label>
+              <label className="block">
+                <span className="ls-body text-sm font-semibold" style={{ color: C.tinta }}>Usuario</span>
+                <input
+                  className="ls-body mt-1.5 w-full rounded-xl px-4 py-2.5 text-sm outline-none"
+                  placeholder="sofia.rodriguez"
+                  style={{ border: `2px solid ${C.borde}`, background: C.fondo }}
+                  value={nuevo.usuario}
+                  onChange={(ev) => setNuevo({ ...nuevo, usuario: ev.target.value })}
+                  required
+                />
+              </label>
+              <label className="block">
+                <span className="ls-body text-sm font-semibold" style={{ color: C.tinta }}>Curso</span>
+                <select
+                  className="ls-body mt-1.5 w-full rounded-xl px-4 py-2.5 text-sm outline-none"
+                  style={{ border: `2px solid ${C.borde}`, background: C.fondo, color: C.tinta }}
+                  value={nuevo.curso}
+                  onChange={(ev) => setNuevo({ ...nuevo, curso: ev.target.value })}
+                  required
+                >
+                  <option value="">Selecciona el curso…</option>
+                  {cursosDisponibles.map((c) => (
+                    <option key={c} value={c}>{c}</option>
+                  ))}
+                </select>
+              </label>
+              <label className="block">
+                <span className="ls-body text-sm font-semibold" style={{ color: C.tinta }}>Contraseña <span style={{ color: C.gris, fontWeight: 400 }}>(opcional)</span></span>
+                <input
+                  className="ls-body mt-1.5 w-full rounded-xl px-4 py-2.5 text-sm outline-none"
+                  placeholder="Si la dejas vacía se genera sola"
+                  style={{ border: `2px solid ${C.borde}`, background: C.fondo }}
+                  value={nuevo.password}
+                  onChange={(ev) => setNuevo({ ...nuevo, password: ev.target.value })}
+                  minLength={4}
+                />
+              </label>
+            </div>
+            <div className="flex gap-2 mt-5">
+              <button
+                type="submit"
+                disabled={creando}
+                className="ls-btn ls-display text-sm font-bold px-5 py-2.5 rounded-full disabled:opacity-60"
+                style={{ background: C.azul, color: "#fff" }}
+              >
+                {creando ? "Creando…" : "Crear cuenta"}
+              </button>
+              <button
+                type="button"
+                onClick={() => { setMostrarNuevo(false); setError(null); }}
+                className="ls-btn ls-body text-sm font-semibold px-5 py-2.5 rounded-full"
+                style={{ background: "#fff", color: C.gris, border: `2px solid ${C.borde}` }}
+              >
+                Cancelar
+              </button>
+            </div>
+          </form>
+        )}
+
         {!sinCursosAsignados && (
         <div className="mt-8 rounded-3xl overflow-hidden" style={{ background: "#fff", border: `2px solid ${C.borde}` }}>
           <div className="px-6 py-4 flex items-center justify-between flex-wrap gap-3" style={{ borderBottom: `2px solid ${C.borde}` }}>
-            <h2 className="ls-display text-lg font-bold" style={{ color: C.tinta }}>Estudiantes</h2>
+            <div className="flex items-center gap-3 flex-wrap">
+              <h2 className="ls-display text-lg font-bold" style={{ color: C.tinta }}>Estudiantes</h2>
+              <button
+                onClick={() => { setMostrarNuevo((v) => !v); setCredenciales(null); }}
+                className="ls-btn ls-body text-xs font-bold px-3.5 py-2 rounded-full"
+                style={{ background: C.azul, color: "#fff" }}
+              >
+                + Nuevo estudiante
+              </button>
+            </div>
             <div className="flex items-center gap-2 flex-wrap">
               <select
                 value={curso}
@@ -149,13 +395,27 @@ export default function PanelDocente() {
                 value={busqueda}
                 onChange={(e) => setBusqueda(e.target.value)}
               />
+              <button
+                onClick={() => apiDescargar(`/docente/reporte.csv${curso ? `?curso=${encodeURIComponent(curso)}` : ""}`, `reporte-lectosmart-${curso || "todos"}.csv`)}
+                className="ls-btn ls-body text-xs font-semibold px-3.5 py-2 rounded-full"
+                style={{ background: "#fff", color: C.gris, border: `2px solid ${C.borde}` }}
+              >
+                ⬇️ CSV
+              </button>
+              <button
+                onClick={() => apiDescargar(`/docente/reporte.pdf${curso ? `?curso=${encodeURIComponent(curso)}` : ""}`, `reporte-lectosmart-${curso || "todos"}.pdf`)}
+                className="ls-btn ls-body text-xs font-semibold px-3.5 py-2 rounded-full"
+                style={{ background: "#fff", color: C.gris, border: `2px solid ${C.borde}` }}
+              >
+                ⬇️ PDF
+              </button>
             </div>
           </div>
           <div className="overflow-x-auto">
             <table className="w-full ls-body text-sm">
               <thead>
                 <tr style={{ color: C.gris }}>
-                  {["Estudiante", "Curso", "Nivel", "Puntos", "Actividades", "Comprensión"].map((h) => (
+                  {["Estudiante", "Curso", "Nivel", "Puntos", "Actividades", "Comprensión", ""].map((h) => (
                     <th key={h} className="text-left font-semibold px-6 py-3 whitespace-nowrap" style={{ background: C.fondo }}>{h}</th>
                   ))}
                 </tr>
@@ -163,7 +423,7 @@ export default function PanelDocente() {
               <tbody>
                 {!cargando && estudiantes.length === 0 && (
                   <tr>
-                    <td colSpan={6} className="px-6 py-6 text-center" style={{ color: C.gris }}>
+                    <td colSpan={7} className="px-6 py-6 text-center" style={{ color: C.gris }}>
                       No hay estudiantes que coincidan con la búsqueda.
                     </td>
                   </tr>
@@ -185,12 +445,24 @@ export default function PanelDocente() {
                         <span className="text-xs font-bold" style={{ color: colorComp(e.comprension) }}>{e.comprension}%</span>
                       </div>
                     </td>
+                    <td className="px-6 py-3.5 whitespace-nowrap text-right">
+                      <button
+                        onClick={() => restablecerPassword(e)}
+                        disabled={reseteando === e.id}
+                        className="ls-btn text-xs font-semibold px-3 py-1.5 rounded-full"
+                        style={{ background: C.azulSuave, color: C.azul }}
+                      >
+                        {reseteando === e.id ? "…" : "🔑 Reset"}
+                      </button>
+                    </td>
                   </tr>
                 ))}
               </tbody>
             </table>
           </div>
         </div>
+        )}
+        </>
         )}
       </div>
     </div>
