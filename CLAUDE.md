@@ -383,8 +383,12 @@ plan de contingencia) en `docs/seguridad-y-rendimiento.md`.
   los bots: no tocar otros servicios. El VPS viejo (45.79.184.87) solo
   reenvía el dominio mientras propaga el DNS; ya no ejecuta la app.
 - En servidoria **toda visita llega como 192.168.2.2** (el router no pasa
-  la IP real): los `limit_req` de nginx están ×10 y los límites por IP de
-  `middleware/limites.js` los comparten todos los visitantes.
+  la IP real). Por eso `middleware/limites.js` **no limita por IP salvo
+  como respaldo**: el login se limita por cuenta (`ruta:usuario`) y el
+  resto por usuario autenticado (id del JWT) — si no, un bot o un salón
+  entero comparten cupo con todo internet. El `limit_req` de nginx
+  (`sites-available/lectosmart`) va ×10 y el burst del login a 40, para
+  no cortar a un salón entrando a la vez.
 - App en `/opt/lectosmart`, servicio systemd `lectosmart` (puerto 4000),
   nginx sirve `frontend/dist` y proxya `/api`. SSL Let's Encrypt.
 - Base de datos: MySQL local `lectosmart` (usuario `lectosmart`,

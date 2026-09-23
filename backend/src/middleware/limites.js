@@ -1,33 +1,61 @@
 const rateLimit = require("express-rate-limit");
+const jwt = require("jsonwebtoken");
+const { normalizarUsuario } = require("../lib/usuario");
 
-// Límites de tasa. Decisión de diseño clave para un colegio: TODO el
-// salón sale a internet por la misma IP pública (NAT), así que limitar
-// por IP con un número bajo bloquearía al curso entero a media clase.
-// Por eso:
-//   - los límites por IP son generosos y solo frenan abuso evidente,
-//   - lo caro (IA, audio) se limita por USUARIO, con el id del JWT.
+// Límites de tasa. Decisión de diseño clave: la IP no sirve para
+// distinguir a nadie. Todo el salón sale a internet por la misma IP
+// pública (NAT), y en servidoria es peor: el router no pasa la IP real,
+// así que TODA visita llega como 192.168.2.2. Un límite por IP se
+// comparte con todo internet: un bot probando contraseñas bloquearía el
+// login del colegio entero. Por eso:
+//   - el login se limita por CUENTA (el usuario que se intenta),
+//   - lo demás se limita por USUARIO autenticado (id del JWT),
+//   - la IP queda solo como respaldo para peticiones sin identidad.
 
 const mensaje = (texto) => ({ error: texto });
 
-// Red de seguridad general de la API. 600/min por IP aguanta de sobra un
-// salón de 40 estudiantes navegando a la vez y aun así corta un script
-// que intente inundar el servidor.
+// Identidad del token si es válido. Se verifica la firma (no basta con
+// decodificar): si no, un atacante inventaría un id distinto en cada
+// petición para no gastar nunca su cupo.
+function idDelToken(req) {
+  const header = req.headers.authorization;
+  if (!header?.startsWith("Bearer ")) return null;
+  try {
+    const { id, rol } = jwt.verify(header.slice(7), process.env.JWT_SECRET);
+    return `${rol}:${id}`;
+  } catch {
+    return null;
+  }
+}
+
+// Red de seguridad general de la API: 600/min por usuario aguanta de
+// sobra a un estudiante navegando y corta un script en bucle. Lo que
+// llega sin token (casi solo los logins) comparte un cupo por IP más
+// amplio, porque en servidoria esa IP es la de todo el mundo.
 const limitadorGeneral = rateLimit({
   windowMs: 60 * 1000,
-  limit: 600,
+  limit: (req) => (idDelToken(req) ? 600 : 3000),
+  keyGenerator: (req) => idDelToken(req) ?? rateLimit.ipKeyGenerator(req.ip),
   standardHeaders: "draft-7",
   legacyHeaders: false,
   message: mensaje("Demasiadas peticiones. Espera un momento e intenta de nuevo."),
 });
 
-// Fuerza bruta contra los tres logins. 20 intentos fallidos por IP cada
-// 10 minutos: suficiente para un curso que se equivoca al escribir, muy
-// poco para un diccionario de contraseñas. Los aciertos no cuentan
+// Fuerza bruta contra los tres logins: 20 intentos fallidos por CUENTA
+// cada 10 minutos. Un estudiante que se equivoca solo se bloquea a sí
+// mismo, y un bot que ataca una cuenta no deja afuera a los demás. La
+// ruta va en la llave porque estudiante, docente y administrador pueden
+// compartir nombre de usuario. Los aciertos no cuentan
 // (skipSuccessfulRequests), así que entrar bien nunca gasta cupo.
 const limitadorLogin = rateLimit({
   windowMs: 10 * 60 * 1000,
   limit: 20,
   skipSuccessfulRequests: true,
+  keyGenerator: (req) => {
+    const bruto = req.body?.usuario;
+    const usuario = typeof bruto === "string" ? normalizarUsuario(bruto) : "";
+    return usuario ? `${req.path}:${usuario}` : rateLimit.ipKeyGenerator(req.ip);
+  },
   standardHeaders: "draft-7",
   legacyHeaders: false,
   message: mensaje("Demasiados intentos fallidos. Espera 10 minutos o pídele a tu profesor que te restablezca la contraseña."),
@@ -44,7 +72,7 @@ function limitadorPorUsuario({ windowMs, limit, texto }) {
     legacyHeaders: false,
     // req.usuario lo pone verifyToken; el fallback por IP solo aplica si
     // alguien llega sin token (ahí la ruta responde 401 igualmente).
-    keyGenerator: (req) => req.usuario?.id ?? rateLimit.ipKeyGenerator(req),
+    keyGenerator: (req) => req.usuario?.id ?? rateLimit.ipKeyGenerator(req.ip),
     message: mensaje(texto),
   });
 }
