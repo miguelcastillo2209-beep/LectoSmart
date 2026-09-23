@@ -17,6 +17,9 @@ Guevara.
   para no servir datos/autenticación obsoletos).
 
 ## Estructura
+- `docs/` — estudios pedagógicos que fundamentan el banco de contenido
+  (`estudio-contenidos-por-grado.md` y `estudio-ortografia-y-gramatica.md`)
+  y el manual de uso
 - `frontend/` — SPA de React (estudiantes y docentes)
 - `backend/` — API REST en Express
 - `frontend/reference/lectosmart-prototipo.jsx` — prototipo de diseño
@@ -47,11 +50,45 @@ Guevara.
   antes de crear estilos nuevos.
 - Mantener `prefers-reduced-motion` respetado en cualquier animación nueva.
 
+## Módulos
+Son **cuatro**, en el orden de `MODULOS` (`backend/src/lib/constants.js`),
+que es también el orden de las tarjetas del panel del estudiante:
+`PALABRAS` (vocabulario) · `ORTOGRAFIA` (escritura correcta) ·
+`COMPRENSION` · `FLUIDEZ`. Al agregar un módulo hay que tocar: `MODULOS` y
+`PUNTOS_BASE_POR_MODULO`, `validarContenido`/`normalizarContenido` en
+`actividadesGestion.js`, los esquemas y el prompt de `propuestas.js`, el
+`CASE` de `moduloLegible` en el seed, `MODULOS_INFO` en
+`PanelEstudiante.jsx`, la lista `MODULOS` de `GestionActividades.jsx` y
+`PropuestasIA.jsx`, la página `Modulo*.jsx` y su ruta en `App.jsx`.
+
+## Módulo ORTOGRAFIA ("Escribir sin errores")
+- Se separó de PALABRAS a pedido de la docente: PALABRAS trabaja el
+  *significado* (sinónimos, morfología) y ORTOGRAFIA la *forma* (cómo se
+  escribe). Mezclados, un % bajo no decía si el problema era vocabulario
+  u ortografía.
+- Misma mecánica que PALABRAS (opción múltiple, sin reintento, 2
+  corazones); `contenido` = `{ instruccion, opciones, respuesta,
+  explicacion, foco }`.
+- **`foco`** (`backend/src/lib/focosOrtografia.js`): `letras` | `tildes` |
+  `gramatica` | `puntuacion`. Es lo que la docente pidió distinguir —
+  "las letras que en verdad van", "la entonación" (que en la plataforma
+  se llama `tildes`, para no confundirla con la prosodia de FLUIDEZ) y
+  "la gramática"; `puntuacion` se agregó porque desde 8° la coma y el
+  punto no caben en ninguno de los otros tres. El servidor lo normaliza
+  siempre (`normalizarFoco`), nunca se confía el valor del cliente.
+- El banco (8 por grado, 48 en total) vive en `prisma/bancoOrtografia.js`,
+  aparte de `BANCO` por tamaño, y se siembra en el mismo bucle del seed.
+  Progresión y reparto de focos por grado justificados en
+  `docs/estudio-ortografia-y-gramatica.md`.
+- El panel del docente muestra "Ortografía por foco"
+  (`desglosePorFoco` de `GET /docente/resumen`), el equivalente de
+  "Comprensión por habilidad".
+
 ## Mecánica de juego (estilo Duolingo)
 - **Opciones aleatorias:** `lib/contenido.js` → `contenidoPublico()` baraja
   el orden de `opciones` en cada petición (Fisher-Yates) y quita
   `respuesta`/`explicacion` antes de enviarlas al estudiante. Por eso
-  `Actividad.contenido.respuesta` en PALABRAS **y** COMPRENSION es el
+  `Actividad.contenido.respuesta` en PALABRAS, ORTOGRAFIA **y** COMPRENSION es el
   **texto** de la opción correcta (no un índice) — así la validación de
   `POST /actividades/:id/intentos` funciona sin importar el orden
   mostrado. Si agregas actividades a mano, `respuesta` debe ser una de
@@ -61,6 +98,25 @@ Guevara.
   tras mostrar la explicación — no hay botón "Intentar de nuevo" en
   ningún módulo (incluida Fluidez, que ya no permite releer el mismo
   texto).
+- **Repetir la lección:** al responder la última actividad ya no se salta
+  al panel: se muestra `LeccionCompletada.jsx` con el marcador de ESA
+  pasada (aciertos y puntos, contados en el estado del módulo) y un botón
+  para rehacerla desde la primera. Como el componente del módulo **no se
+  desmonta** al cambiar de `:id`, `repetir()` reinicia a mano corazones,
+  falladas, aciertos y puntos. En el panel, `elegirSiguiente()` devuelve la
+  **primera** actividad cuando ya están todas completadas (el botón dice
+  "Repasar", y antes caía en la última pregunta).
+- **Animaciones (index.css, prefijo `ls-`):** entrada escalonada de las
+  opciones (`ls-entra` + `--retraso`), relieve tipo tecla en los botones
+  (`ls-opcion`, borde inferior de 4px que se hunde), rebote al acertar
+  (`ls-acierto`), temblor al fallar (`ls-fallo`), panel de explicación que
+  sube (`ls-sube`) y latido del corazón perdido (`ls-latido`). Todas están
+  anuladas bajo `prefers-reduced-motion`, donde además se fuerza
+  `opacity: 1` porque las entradas usan `both` y si no quedarían invisibles.
+  **La animación nunca decide el valor mostrado:** la barra de progreso
+  pinta su ancho directo y deja que la transición de CSS lo anime — usar
+  `requestAnimationFrame` para eso la dejaba en 0% en pestañas de fondo,
+  donde el navegador no ejecuta rAF.
 - **2 corazones por lección:** `CORAZONES_POR_LECCION` en
   `lib/constants.js` (solo referencia; el valor real vive como
   `CORAZONES_INICIALES` en cada `Modulo*.jsx`). Los corazones **no se
@@ -132,7 +188,9 @@ Guevara.
   COMPRENSION, cada intento se clasifica por `contenido.nivel`
   (`literal`/`inferencial`/`critico`; los nuevos usan un enum en el schema
   de Gemini de `propuestas.js`, con fallback a `literal`). El panel muestra
-  la tarjeta "Comprensión por habilidad" con 3 tiles (aciertos/total).
+  la tarjeta "Comprensión por habilidad" con 3 tiles (aciertos/total) y,
+  al lado, "Ortografía por foco" con 4 tiles construidos igual desde
+  `contenido.foco` (`desglosePorFoco`).
 - **Reportes descargables:** `GET /docente/reporte.csv` y
   `.../reporte.pdf` (PDF con `pdfkit`, alto de fila dinámico vía
   `doc.heightOfString()` para que nombres largos no se solapen). Frontend:
@@ -147,8 +205,16 @@ Guevara.
 
 ## Gestión de actividades publicadas (docente)
 - `routes/actividadesGestion.js` (montado en `/api/actividades-gestion`):
-  GET (listar por curso/módulo), PUT (editar), POST `mover` (reordenar) y
-  DELETE. `validarContenido()` valida la forma por módulo antes de guardar.
+  GET (listar por curso/módulo), POST (crear), PUT (editar), POST
+  `mover` (reordenar) y DELETE. `validarContenido()` valida la forma por
+  módulo antes de guardar y `normalizarContenido()` aplica lo que nunca
+  se toma del cliente (conteo de palabras en FLUIDEZ, `foco` en
+  ORTOGRAFIA); ambos los comparten POST y PUT.
+- **Crear** publica de una vez para el curso (a diferencia de las
+  propuestas de IA, que pasan por revisión) con `orden` = máximo + 1,
+  igual que al aprobar una propuesta. En el frontend es el botón
+  "+ Nueva actividad" y reusa `FormularioActividad`, el mismo componente
+  de la edición (sin `actividad` arranca en blanco).
   Reordenar y borrar usan transacciones Prisma: `mover` fija un `orden: -1`
   temporal para evitar chocar con el índice único `modulo_curso_orden`;
   DELETE borra primero los `Intento` hijos (FK) y luego la `Actividad`.
@@ -172,12 +238,15 @@ Guevara.
   (ver "Gestión de actividades publicadas"). `puntosBase` es fijo por
   módulo (20/20/30) en todos los cursos; la dificultad sube por el
   contenido, no por el puntaje.
-- El banco actual (8 actividades por módulo por curso, 144 en total) se
-  redactó con asistencia de IA siguiendo el estudio pedagógico de
+- El banco actual (8 actividades por módulo por curso, **192 en total**:
+  144 de los tres módulos originales + 48 de ORTOGRAFIA) se redactó con
+  asistencia de IA siguiendo los estudios pedagógicos de
   `docs/estudio-contenidos-por-grado.md` (Estándares Básicos MEN, DBA v2
-  y referencias de fluidez lectora) — **debe revisarse por las autoras o
+  y referencias de fluidez lectora) y
+  `docs/estudio-ortografia-y-gramatica.md` (el mismo marco + la
+  Ortografía de la RAE 2010) — **debe revisarse por las autoras o
   la docente antes de usarse en un salón real**. Para ampliarlo, seguir
-  los criterios de redacción y los rangos de palabras/ppm de ese estudio.
+  los criterios de redacción y los rangos de palabras/ppm de esos estudios.
 - En FLUIDEZ, el campo `palabras` del `contenido` debe ser el conteo
   **real** de palabras del texto (la app calcula las ppm con él); en
   2026-07-20 se corrigieron 24 textos que lo tenían inflado.
@@ -245,11 +314,30 @@ Guevara.
   desde `/admin` → pestaña Docentes → botones de curso (selección
   múltiple).
 
-## Documentos y asistente IA (solo docente/administrador)
+## Documentos, material de refuerzo y asistente IA
 - Modelo `Documento` + carpeta `backend/uploads/` (fuera del repo y de la
-  carpeta pública; se descarga solo vía endpoint autenticado). Rutas en
-  `backend/src/routes/documentos.js` — `requireRole("docente",
-  "administrador")`, los estudiantes reciben 403.
+  carpeta pública; se descarga solo vía endpoint autenticado). En
+  `backend/src/routes/documentos.js` el guard es `verifyToken` para todo
+  y `soloCuerpoDocente` (`requireRole("docente","administrador")`) por
+  ruta: subir, listar, borrar y cambiar visibilidad siguen siendo del
+  cuerpo docente, y el estudiante recibe 403 en todas ellas.
+- **Material de refuerzo (visible para estudiantes):** `Documento` tiene
+  `visibleParaEstudiantes` (false por defecto — subir un archivo no debe
+  publicarlo por accidente, hay rúbricas que solo son del docente) y
+  `cursos` (JSON-string, arreglo vacío = todos los cursos, mismo patrón
+  que `Docente.cursosAsignados`).
+  - `GET /api/documentos/mios` (solo estudiante) devuelve los publicados
+    para **su** curso, sin `subidoPor` ni `textoExtraido`.
+  - `PATCH /api/documentos/:id/visibilidad` (docente/admin) publica o
+    despublica y fija los cursos.
+  - `GET /api/documentos/:id/descargar` es la única ruta compartida: si
+    el rol es estudiante comprueba visibilidad **y** curso antes de
+    servir el archivo — sin eso, tener el id de cualquier documento
+    bastaría para bajarlo.
+  - Frontend: `MaterialesEstudiante.jsx` (sección "Material de refuerzo"
+    del panel del estudiante, se oculta si no hay nada publicado) y los
+    controles de publicación en `DocumentosPanel.jsx`. Publicar exige
+    elegir al menos un curso.
 - Al subir un archivo se extrae su texto (`services/extraerTexto.js`:
   pdf-parse, mammoth, texto plano) y se guarda en `Documento.textoExtraido`
   — ese texto alimenta al asistente IA (RAG), no se re-procesa por consulta.
@@ -265,9 +353,38 @@ Guevara.
 - El script `dev` del backend usa `--watch-path=src` a propósito: con
   `--watch` a secas, cada subida a `uploads/` reiniciaba el servidor.
 
-## Producción (VPS)
-- `https://lectosmart.coltek.com.co` — VPS Linode 45.79.184.87 (compartido
-  con el CRM de Coltek; no tocar `rocketcrm`, n8n ni evolution-api).
+## Seguridad y rendimiento
+Detalle completo (incluida la lista de tareas pendientes en el VPS y el
+plan de contingencia) en `docs/seguridad-y-rendimiento.md`.
+- `server.js` monta `helmet`, `compression`, `trust proxy 1` (nginx),
+  tiempos límite del servidor y **aborta el arranque si falta
+  `JWT_SECRET`** — sin secreto, el control de acceso no vale nada.
+- **Límites de tasa** en `middleware/limites.js`. Regla de diseño: todo el
+  colegio comparte una IP pública (NAT), así que los límites por IP son
+  altos (600/min general, 20 fallos de login por 10 min) y lo caro se
+  limita **por usuario** con el id del JWT: IA (30/5 min), audio de
+  fluidez (10/5 min) e intentos (120/min). Un límite bajo por IP dejaría
+  a un curso entero afuera a media clase.
+- **Cuerpo de las peticiones:** 512 kB en toda la API. La excepción es
+  `/actividades/:id/verificar-audio`, que recibe audio en base64 y monta
+  su propio `express.json({ limit: "10mb" })` dentro de la ruta;
+  `fluidezAudioRoutes` se monta antes del parser global a propósito
+  (body-parser marca `req._body` y no vuelve a leer el cuerpo). Si se
+  mueve ese `app.use`, el límite de 10 MB vuelve a aplicar a toda la API.
+- El frontend carga por rutas (`React.lazy` en `App.jsx`) y solo importa
+  el subconjunto **latino** de las fuentes; el precache del PWA pasó de
+  2 733 KB a 888 KB. `frontend/reference/logo-original.jpg` guarda el
+  logo en alta resolución (el de `public/` está reducido a 256 px).
+
+## Producción (servidoria)
+- `https://lectosmart.coltek.com.co` — desde el 2026-09-23 corre en
+  `servidoria` (190.85.68.90, se entra con `ssh servidoria`, usuario
+  `admin1` con `sudo`). Comparte el servidor con el CRM de Coltek, n8n y
+  los bots: no tocar otros servicios. El VPS viejo (45.79.184.87) solo
+  reenvía el dominio mientras propaga el DNS; ya no ejecuta la app.
+- En servidoria **toda visita llega como 192.168.2.2** (el router no pasa
+  la IP real): los `limit_req` de nginx están ×10 y los límites por IP de
+  `middleware/limites.js` los comparten todos los visitantes.
 - App en `/opt/lectosmart`, servicio systemd `lectosmart` (puerto 4000),
   nginx sirve `frontend/dist` y proxya `/api`. SSL Let's Encrypt.
 - Base de datos: MySQL local `lectosmart` (usuario `lectosmart`,
@@ -277,7 +394,11 @@ Guevara.
 - Despliegue: `npm run build` en frontend → tar de `backend` (sin
   node_modules/.env/dev.db/migrations) + `frontend/dist` → scp → extraer
   en `/opt/lectosmart` → `npx prisma db push --schema
-  prisma/schema.mysql.prisma` → `systemctl restart lectosmart`.
+  prisma/schema.mysql.prisma` → `npm run seed` (el seed es idempotente,
+  usa `upsert`; hace falta cuando el banco de actividades cambió) →
+  `systemctl restart lectosmart`.
+- El `.env` de producción debe tener `FRONTEND_URL` (si no, la API acepta
+  cualquier origen) y un `JWT_SECRET` largo (sin él la app ya no arranca).
 - Respaldo diario 2:10am (`/usr/local/bin/backup-lectosmart.sh` →
   `/root/backups/lectosmart-<fecha>.sql.gz`, conserva 14).
 - La instalación local del colegio (SQLite, sin internet) sigue siendo
