@@ -5,6 +5,7 @@ import { AppHeader } from "../components/AppHeader";
 
 const FUNCIONALIDADES = [
   { icono: "🔤", titulo: "Reconocer palabras", desc: "Juegos para identificar y formar palabras cada vez más rápido.", color: C.azulSuave },
+  { icono: "✍️", titulo: "Escribir sin errores", desc: "La letra que va, la tilde en su sitio y frases bien armadas.", color: C.coralSuave },
   { icono: "📖", titulo: "Comprender textos", desc: "Lee historias cortas y responde retos sobre lo que entendiste.", color: C.verdeSuave },
   { icono: "⏱️", titulo: "Ganar fluidez", desc: "Lecturas cronometradas para leer con más ritmo y seguridad.", color: C.moradoSuave },
 ];
@@ -85,7 +86,7 @@ export default function Inicio() {
         <h2 className="ls-display text-2xl font-bold mb-6" style={{ color: C.tinta }}>
           ¿Qué puedes hacer en LectoSmart?
         </h2>
-        <div className="grid md:grid-cols-3 gap-5">
+        <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-5">
           {FUNCIONALIDADES.map((f) => (
             <div key={f.titulo} className="ls-card rounded-3xl p-6" style={{ background: "#fff", border: `2px solid ${C.borde}` }}>
               <div className="w-14 h-14 rounded-2xl flex items-center justify-center text-3xl mb-4" style={{ background: f.color }}>

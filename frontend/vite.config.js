@@ -16,7 +16,11 @@ export default defineConfig({
       // (evita mostrar progreso/sesión desactualizados).
       workbox: {
         navigateFallback: 'index.html',
-        globPatterns: ['**/*.{js,css,html,woff,woff2,jpg,png,svg,ico}'],
+        // Solo woff2: los .woff siguen existiendo como respaldo en el CSS
+        // para navegadores viejos, pero precachearlos duplicaba el peso
+        // de las fuentes en la instalación del PWA sin que ningún
+        // navegador actual los llegue a pedir.
+        globPatterns: ['**/*.{js,css,html,woff2,jpg,png,svg,ico}'],
       },
       manifest: {
         name: 'LectoSmart',

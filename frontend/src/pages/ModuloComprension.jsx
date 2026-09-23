@@ -6,6 +6,7 @@ import { BarraProgresoActividad } from "../components/BarraProgresoActividad";
 import { PreguntaOpciones } from "../components/PreguntaOpciones";
 import { SinCorazones } from "../components/SinCorazones";
 import { RepasoPregunta } from "../components/RepasoPregunta";
+import { LeccionCompletada } from "../components/LeccionCompletada";
 import { apiFetch } from "../api/client";
 
 const CORAZONES_INICIALES = 2;
@@ -21,6 +22,10 @@ export default function ModuloComprension() {
   const [sinCorazones, setSinCorazones] = useState(false);
   const [enRepaso, setEnRepaso] = useState(false);
   const [falladas, setFalladas] = useState([]);
+  // Resultado de ESTA pasada por la lección (se reinicia al repetirla).
+  const [aciertos, setAciertos] = useState(0);
+  const [puntosRonda, setPuntosRonda] = useState(0);
+  const [completada, setCompletada] = useState(false);
   const [enviando, setEnviando] = useState(false);
   const [error, setError] = useState(null);
 
@@ -64,6 +69,9 @@ export default function ModuloComprension() {
       if (!data.correcto) {
         setVidas((v) => Math.max(0, v - 1));
         setFalladas((f) => [...f, id]);
+      } else {
+        setAciertos((a) => a + 1);
+        setPuntosRonda((p) => p + data.puntosGanados);
       }
       setResultado({
         seleccionada: valor,
@@ -88,17 +96,34 @@ export default function ModuloComprension() {
     if (siguiente) {
       navigate(`/comprension/${siguiente.id}`);
     } else {
-      navigate("/panel");
+      setCompletada(true);
     }
+  };
+
+  // Repetir desde la primera actividad. El componente no se desmonta al
+  // cambiar de :id (solo cambia el parámetro), así que hay que reiniciar
+  // a mano el marcador de la ronda.
+  const repetir = () => {
+    setCompletada(false);
+    setVidas(CORAZONES_INICIALES);
+    setFalladas([]);
+    setAciertos(0);
+    setPuntosRonda(0);
+    setResultado(null);
+    if (lista.length > 0) navigate(`/comprension/${lista[0].id}`);
   };
 
   const corazonRecuperado = () => {
     setVidas(1);
     setSinCorazones(false);
     setEnRepaso(false);
+    // Sacar de la cola la que se acaba de repasar: si vuelve a quedarse
+    // sin corazones, el repaso será de OTRA pregunta fallada, no de la
+    // misma.
+    setFalladas((f) => f.slice(1));
     const siguiente = lista.find((a) => a.orden > actividad.orden);
     if (siguiente) navigate(`/comprension/${siguiente.id}`);
-    else navigate("/panel");
+    else setCompletada(true);
   };
 
   if (error) {
@@ -118,6 +143,19 @@ export default function ModuloComprension() {
         <AppHeader right={null} />
         <p className="ls-body text-center mt-10" style={{ color: C.gris }}>Cargando actividad…</p>
       </div>
+    );
+  }
+
+  if (completada) {
+    return (
+      <LeccionCompletada
+        modulo="Comprensión lectora"
+        aciertos={aciertos}
+        total={lista.length}
+        puntos={puntosRonda}
+        onRepetir={repetir}
+        onVolver={() => navigate("/panel")}
+      />
     );
   }
 

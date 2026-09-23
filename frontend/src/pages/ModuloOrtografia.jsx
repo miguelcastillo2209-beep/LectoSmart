@@ -11,7 +11,19 @@ import { apiFetch } from "../api/client";
 
 const CORAZONES_INICIALES = 2;
 
-export default function ModuloPalabras() {
+// Qué está practicando la actividad (backend/src/lib/focosOrtografia.js).
+// Al estudiante se le muestra en corto, para que sepa dónde poner la
+// atención antes de responder.
+const ETIQUETA_FOCO = {
+  letras: "La letra que va",
+  tildes: "La tilde",
+  gramatica: "Cómo se arma la frase",
+  puntuacion: "La puntuación",
+};
+
+// Misma mecánica que Reconocer palabras (opción múltiple, sin reintento,
+// 2 corazones por lección); cambia el módulo que se consulta y el rótulo.
+export default function ModuloOrtografia() {
   const { id } = useParams();
   const navigate = useNavigate();
 
@@ -43,7 +55,7 @@ export default function ModuloPalabras() {
       try {
         const [detalle, actividades] = await Promise.all([
           apiFetch(`/actividades/${id}`, { onUnauthorized: irAIngreso }),
-          apiFetch("/modulos/PALABRAS/actividades", { onUnauthorized: irAIngreso }),
+          apiFetch("/modulos/ORTOGRAFIA/actividades", { onUnauthorized: irAIngreso }),
         ]);
         if (!activo) return;
         setActividad(detalle);
@@ -87,8 +99,6 @@ export default function ModuloPalabras() {
     }
   };
 
-  // Al recuperar un corazón repasando, se sigue la lección desde la
-  // actividad que estaba en pantalla cuando se acabaron los corazones.
   const corazonRecuperado = () => {
     setVidas(1);
     setSinCorazones(false);
@@ -98,13 +108,10 @@ export default function ModuloPalabras() {
     // misma.
     setFalladas((f) => f.slice(1));
     const siguiente = lista.find((a) => a.orden > actividad.orden);
-    if (siguiente) navigate(`/palabras/${siguiente.id}`);
+    if (siguiente) navigate(`/ortografia/${siguiente.id}`);
     else setCompletada(true);
   };
 
-  // Sin reintentos: cada pregunta se responde una sola vez (acierte o
-  // falle) y siempre se avanza a la siguiente, salvo que se acaben los
-  // corazones de la lección.
   const continuar = () => {
     if (vidas <= 0) {
       setSinCorazones(true);
@@ -112,7 +119,7 @@ export default function ModuloPalabras() {
     }
     const siguiente = lista.find((a) => a.orden > actividad.orden);
     if (siguiente) {
-      navigate(`/palabras/${siguiente.id}`);
+      navigate(`/ortografia/${siguiente.id}`);
     } else {
       setCompletada(true);
     }
@@ -128,7 +135,7 @@ export default function ModuloPalabras() {
     setAciertos(0);
     setPuntosRonda(0);
     setResultado(null);
-    if (lista.length > 0) navigate(`/palabras/${lista[0].id}`);
+    if (lista.length > 0) navigate(`/ortografia/${lista[0].id}`);
   };
 
   if (error) {
@@ -154,7 +161,7 @@ export default function ModuloPalabras() {
   if (completada) {
     return (
       <LeccionCompletada
-        modulo="Reconocer palabras"
+        modulo="Escribir sin errores"
         aciertos={aciertos}
         total={lista.length}
         puntos={puntosRonda}
@@ -189,6 +196,7 @@ export default function ModuloPalabras() {
   }
 
   const opciones = actividad.contenido.opciones.map((op) => ({ valor: op, etiqueta: op }));
+  const foco = ETIQUETA_FOCO[actividad.contenido.foco];
 
   return (
     <div>
@@ -204,7 +212,14 @@ export default function ModuloPalabras() {
         <BarraProgresoActividad posicion={actividad.orden} total={lista.length || 1} vidas={vidas} />
 
         <div className="rounded-3xl p-6 md:p-8" style={{ background: "#fff", border: `2px solid ${C.borde}` }}>
-          <span className="ls-body text-xs font-bold uppercase tracking-widest" style={{ color: C.azul }}>Reconocer palabras</span>
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className="ls-body text-xs font-bold uppercase tracking-widest" style={{ color: C.coral }}>Escribir sin errores</span>
+            {foco && (
+              <span className="ls-body text-xs font-bold px-2.5 py-1 rounded-full" style={{ background: C.coralSuave, color: "#C2453B" }}>
+                {foco}
+              </span>
+            )}
+          </div>
           <h1 className="ls-display text-2xl font-extrabold mt-2" style={{ color: C.tinta }}>{actividad.contenido.instruccion}</h1>
         </div>
 

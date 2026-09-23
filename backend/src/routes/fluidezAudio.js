@@ -1,6 +1,7 @@
-const { Router } = require("express");
+const { Router, json } = require("express");
 const prisma = require("../lib/prisma");
 const { verifyToken, requireRole } = require("../middleware/auth");
+const { limitadorAudio } = require("../middleware/limites");
 const { estudianteActual } = require("../lib/estudianteActual");
 const { transcribirAudio, iaConfigurada } = require("../services/ia");
 const { compararLectura } = require("../lib/comparadorTexto");
@@ -11,12 +12,17 @@ const MIME_PERMITIDOS = ["audio/webm", "audio/ogg", "audio/wav", "audio/mp4", "a
 // Generoso para una lectura de 1-2 minutos codificada en base64 (~33% más pesada que el binario).
 const AUDIO_MAX_BASE64 = 8 * 1024 * 1024;
 
+// Esta es la ÚNICA ruta de la API que acepta un cuerpo grande. El parser
+// vive aquí y no en server.js para que el límite de 10 MB no aplique al
+// resto de endpoints (ver el comentario del montaje en server.js).
+const parsearAudio = json({ limit: "10mb" });
+
 // Verificación opcional de fluidez lectora: transcribe el audio que el
 // estudiante grabó leyendo en voz alta y compara contra el texto
 // original. Es un endpoint aparte de /intentos a propósito — si la IA
 // falla o está congestionada, el puntaje por ppm ya calculado no se ve
 // afectado en absoluto.
-router.post("/actividades/:id/verificar-audio", verifyToken, requireRole("estudiante"), async (req, res) => {
+router.post("/actividades/:id/verificar-audio", verifyToken, requireRole("estudiante"), limitadorAudio, parsearAudio, async (req, res) => {
   if (!iaConfigurada()) {
     return res.status(503).json({ error: "La verificación por voz no está disponible en este momento." });
   }

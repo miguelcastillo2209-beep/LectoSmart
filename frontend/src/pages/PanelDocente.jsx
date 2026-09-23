@@ -27,6 +27,14 @@ const NIVEL_INFO = {
   critico: { etiqueta: "Crítico", descripcion: "evalúa, compara y detecta falacias" },
 };
 
+// Focos del módulo Escribir sin errores (backend/src/lib/focosOrtografia.js).
+const FOCO_INFO = {
+  letras: { etiqueta: "Letras", descripcion: "b/v, s/c/z, g/j, h" },
+  tildes: { etiqueta: "Tildes", descripcion: "dónde va la fuerza de voz" },
+  gramatica: { etiqueta: "Gramática", descripcion: "concordancia y palabras que cambian con la frase" },
+  puntuacion: { etiqueta: "Puntuación", descripcion: "coma, punto y signos" },
+};
+
 export default function PanelDocente() {
   const { perfil, rol, cerrarSesion } = useAuth();
   const navigate = useNavigate();
@@ -191,7 +199,11 @@ export default function PanelDocente() {
         </div>
 
         {seccion === "documentos" && (
-          <DocumentosPanel onUnauthorized={irAIngreso} nombreUsuario={perfil?.nombre} />
+          <DocumentosPanel
+            onUnauthorized={irAIngreso}
+            nombreUsuario={perfil?.nombre}
+            cursosDisponibles={cursosDisponibles}
+          />
         )}
         {seccion === "asistente" && <AsistenteIA onUnauthorized={irAIngreso} />}
         {seccion === "propuestas" && (
@@ -248,6 +260,35 @@ export default function PanelDocente() {
                     </div>
                     <p className="ls-body text-xs mt-0.5" style={{ color: C.gris }}>{info.descripcion}</p>
                     <p className="ls-body text-[11px] mt-1" style={{ color: C.gris }}>{d.total} pregunta{d.total === 1 ? "" : "s"} respondida{d.total === 1 ? "" : "s"}</p>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
+        {!sinCursosAsignados && resumen?.desglosePorFoco && (
+          <div className="mt-6 rounded-3xl p-6" style={{ background: "#fff", border: `2px solid ${C.borde}` }}>
+            <h2 className="ls-display text-lg font-bold" style={{ color: C.tinta }}>Ortografía por foco</h2>
+            <p className="ls-body text-xs mt-1" style={{ color: C.gris }}>
+              Aciertos en “Escribir sin errores” separados por lo que evalúa cada actividad, para
+              saber si el problema es la letra, la tilde, la gramática o la puntuación.
+            </p>
+            <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4 mt-4">
+              {resumen.desglosePorFoco.map((d) => {
+                const info = FOCO_INFO[d.foco];
+                return (
+                  <div key={d.foco} className="rounded-2xl p-4" style={{ background: C.fondo }}>
+                    <div className="flex items-center justify-between">
+                      <p className="ls-display text-sm font-bold" style={{ color: C.tinta }}>{info.etiqueta}</p>
+                      <p className="ls-display text-xl font-extrabold" style={{ color: d.pct === null ? C.gris : colorComp(d.pct) }}>
+                        {d.pct === null ? "—" : `${d.pct}%`}
+                      </p>
+                    </div>
+                    <p className="ls-body text-xs mt-0.5" style={{ color: C.gris }}>{info.descripcion}</p>
+                    <p className="ls-body text-[11px] mt-1" style={{ color: C.gris }}>
+                      {d.total} pregunta{d.total === 1 ? "" : "s"} respondida{d.total === 1 ? "" : "s"}
+                    </p>
                   </div>
                 );
               })}

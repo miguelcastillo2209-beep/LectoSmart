@@ -1,10 +1,12 @@
 const { Router } = require("express");
 const prisma = require("../lib/prisma");
 const { verifyToken, requireRole } = require("../middleware/auth");
+const { limitadorIA } = require("../middleware/limites");
 const { cursosPermitidosPara } = require("../lib/cursosDocente");
 const { MODULOS, CURSOS, PUNTOS_BASE_POR_MODULO } = require("../lib/constants");
-const { ENFOQUE_POR_CURSO } = require("../lib/enfoquePorCurso");
+const { ENFOQUE_POR_CURSO, ENFOQUE_ORTOGRAFIA_POR_CURSO } = require("../lib/enfoquePorCurso");
 const { METAS_FLUIDEZ } = require("../lib/metasFluidez");
+const { FOCOS_ORTOGRAFIA, ETIQUETA_FOCO, normalizarFoco } = require("../lib/focosOrtografia");
 const { generarJSON } = require("../services/ia");
 const { construirContextoDocumentos } = require("../services/contextoDocumentos");
 
@@ -40,6 +42,22 @@ function esquemaItemPorModulo(modulo) {
         explicacion: { type: "STRING" },
       },
       required: ["titulo", "instruccion", "opciones", "respuesta", "explicacion"],
+    };
+  }
+  if (modulo === "ORTOGRAFIA") {
+    return {
+      type: "OBJECT",
+      properties: {
+        titulo: { type: "STRING" },
+        instruccion: { type: "STRING" },
+        opciones: { type: "ARRAY", items: { type: "STRING" } },
+        respuesta: { type: "STRING" },
+        explicacion: { type: "STRING" },
+        // Qué está practicando la actividad — lo usa el docente para ver
+        // si el grupo falla en las letras, en la tilde o en la gramática.
+        foco: { type: "STRING", enum: FOCOS_ORTOGRAFIA },
+      },
+      required: ["titulo", "instruccion", "opciones", "respuesta", "explicacion", "foco"],
     };
   }
   if (modulo === "COMPRENSION") {
@@ -84,11 +102,14 @@ function esquemaLotePorModulo(modulo) {
 // ── Construcción de prompts ─────────────────────────────────────────────
 
 function instruccionesBase(modulo, curso) {
-  const enfoque = ENFOQUE_POR_CURSO[curso];
+  // ORTOGRAFIA tiene su propia progresión por grado (la letra, la tilde
+  // y la sintaxis no avanzan al mismo ritmo que la comprensión).
+  const enfoque = modulo === "ORTOGRAFIA" ? ENFOQUE_ORTOGRAFIA_POR_CURSO[curso] : ENFOQUE_POR_CURSO[curso];
   const descripcionModulo = {
     PALABRAS: "vocabulario/ortografía/morfología, con una instrucción, 3 opciones y una respuesta correcta",
     COMPRENSION: "un texto corto (máximo 100 palabras) seguido de una pregunta de opción múltiple con 3 opciones",
     FLUIDEZ: "un texto para leer en voz alta cronometrado (sin preguntas de opción múltiple)",
+    ORTOGRAFIA: "un ejercicio de escritura correcta con una instrucción, 3 opciones y una respuesta correcta",
   }[modulo];
 
   return `Eres un experto en pedagogía del lenguaje que redacta actividades para LectoSmart, una plataforma de lectura de la I.E. Técnica Valle de Tenza (Guateque, Boyacá, Colombia) para el grado ${curso}.
@@ -103,6 +124,9 @@ Reglas para redactar:
 - Los distractores (opciones incorrectas) deben ser plausibles, errores reales que un lector cometería, nunca absurdos.
 - La "explicacion" es la retroalimentación que verá el estudiante después de responder (acierte o no): debe decir POR QUÉ la respuesta correcta es la correcta, en 1-2 frases claras, sin sonar robótica.
 - No repitas literalmente el enunciado de la pregunta dentro de la explicación.
+${modulo === "ORTOGRAFIA" ? `- Presenta siempre la palabra dentro de una oración con contexto, nunca suelta: el estudiante debe poder decidir por el sentido, no por memoria visual.
+- El campo "foco" dice qué se está practicando: ${FOCOS_ORTOGRAFIA.map((f) => `"${f}" = ${ETIQUETA_FOCO[f]}`).join("; ")}. Clasifica según lo que realmente decide la respuesta.
+- Los distractores deben ser la falta ortográfica que un estudiante comete de verdad (escribir "hechar", "haber" por "a ver", olvidar la tilde), no palabras inventadas.` : ""}
 ${modulo === "COMPRENSION" ? '- El campo "nivel" clasifica la pregunta según lo que exige del lector: "literal" (la respuesta está dicha explícitamente en el texto), "inferencial" (hay que deducirla de pistas, causas, sentimientos o el sentido global no dicho directamente), "critico" (hay que evaluar la validez de un argumento, distinguir hecho de opinión, detectar una falacia, o contrastar posturas). Clasifica con honestidad según la pregunta que redactaste, no según el grado.' : ""}
 ${modulo !== "FLUIDEZ" ? "- El campo \"respuesta\" debe ser EXACTAMENTE igual (carácter por carácter) a una de las cadenas de \"opciones\"." : ""}`;
 }
@@ -146,6 +170,23 @@ function normalizarItem(modulo, curso, item) {
     const instruccion = String(item.instruccion || "").trim();
     if (opciones.length < 2 || !instruccion || !opciones.includes(respuesta)) return null;
     return { titulo, contenido: { instruccion, opciones, respuesta, explicacion: String(item.explicacion || "").trim() } };
+  }
+
+  if (modulo === "ORTOGRAFIA") {
+    const opciones = Array.isArray(item.opciones) ? item.opciones.map((o) => String(o).trim()).filter(Boolean) : [];
+    const respuesta = String(item.respuesta || "").trim();
+    const instruccion = String(item.instruccion || "").trim();
+    if (opciones.length < 2 || !instruccion || !opciones.includes(respuesta)) return null;
+    return {
+      titulo,
+      contenido: {
+        instruccion,
+        opciones,
+        respuesta,
+        explicacion: String(item.explicacion || "").trim(),
+        foco: normalizarFoco(item.foco),
+      },
+    };
   }
 
   if (modulo === "COMPRENSION") {
@@ -202,7 +243,7 @@ router.get("/", async (req, res) => {
   );
 });
 
-router.post("/generar", async (req, res) => {
+router.post("/generar", limitadorIA, async (req, res) => {
   const { modulo, curso } = req.body || {};
   const cantidad = Math.min(CANTIDAD_MAX, Math.max(CANTIDAD_MIN, Number(req.body?.cantidad) || CANTIDAD_DEFECTO));
 
@@ -256,7 +297,7 @@ router.post("/generar", async (req, res) => {
   }
 });
 
-router.post("/:id/regenerar", async (req, res) => {
+router.post("/:id/regenerar", limitadorIA, async (req, res) => {
   const sugerencia = String(req.body?.sugerencia || "").trim();
   if (!sugerencia) return res.status(400).json({ error: "Escribe una sugerencia para mejorar la propuesta" });
 

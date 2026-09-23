@@ -276,7 +276,10 @@
   /* ---------- Tarjetas de módulo ---------- */
   .modulos {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(215px, 1fr));
+    /* Son cuatro módulos: con 215px caben tres por fila y el cuarto
+       quedaba solo en una fila aparte. A 260px caben dos, así que se
+       reparten en un 2x2 equilibrado (y en una columna en el móvil). */
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
     gap: 14px;
     margin: 20px 0 8px;
   }
@@ -329,14 +332,20 @@
 
   ol.pasos li {
     counter-increment: paso;
-    display: grid;
-    grid-template-columns: 30px 1fr;
-    gap: 13px;
-    align-items: start;
+    /* El número va posicionado, no en una columna de grid. Con
+       display:grid cada elemento en línea del texto (un <strong>, por
+       ejemplo) se convertía en una celda nueva y caía en la columna de
+       30px del número, partiéndose una palabra por renglón. Así el
+       texto fluye como texto normal. */
+    position: relative;
+    padding-left: 43px;
+    min-height: 30px;
   }
 
   ol.pasos li::before {
     content: counter(paso);
+    position: absolute;
+    left: 0; top: 0;
     width: 30px; height: 30px;
     display: grid; place-items: center;
     border-radius: 9px;
@@ -621,13 +630,19 @@
       Desde ahí escoge en qué quiere practicar.
     </p>
 
-    <h3>Los tres módulos</h3>
+    <h3>Los cuatro módulos</h3>
 
     <div class="modulos">
       <article class="modulo">
         <span class="icono">🔤</span>
         <h4>Reconocer palabras</h4>
-        <p>Ejercicios para identificar palabras, su significado y su uso correcto.</p>
+        <p>Ejercicios sobre el <em>significado</em> de las palabras: sinónimos, antónimos, cómo se forman.</p>
+        <span class="puntos-chip">20 puntos</span>
+      </article>
+      <article class="modulo">
+        <span class="icono">✍️</span>
+        <h4>Escribir sin errores</h4>
+        <p>Ejercicios sobre la <em>forma</em>: qué letra va, dónde va la tilde y cómo se arma bien la frase.</p>
         <span class="puntos-chip">20 puntos</span>
       </article>
       <article class="modulo">
@@ -645,8 +660,55 @@
     </div>
 
     <p>
-      Cada módulo tiene <strong>8 actividades por curso</strong>. Fluidez da más
+      Cada módulo tiene <strong>8 actividades por curso</strong>, es decir
+      <strong>32 actividades por grado</strong> y 192 en total. Fluidez da más
       puntos porque exige leer en voz alta contra el reloj.
+    </p>
+
+    <h3>Qué practica «Escribir sin errores»</h3>
+    <p>
+      Es el módulo más reciente y nació de una necesidad concreta del aula: los
+      errores de ortografía estaban mezclados con el vocabulario, así que un
+      porcentaje bajo no decía si el problema era no conocer la palabra o no
+      saber escribirla. Ahora van separados, y cada actividad indica qué está
+      practicando:
+    </p>
+
+    <div class="tabla-envoltura">
+      <table>
+        <thead>
+          <tr><th>Se trabaja</th><th>Qué decide la respuesta</th><th>Ejemplo</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><strong>La letra que va</strong></td><td>Letras que suenan igual pero se escriben distinto</td><td>b/v, s/c/z, g/j, h muda</td></tr>
+          <tr><td><strong>La tilde</strong></td><td>Dónde carga la fuerza de voz y si se marca</td><td>camión, lápiz, tú/tu</td></tr>
+          <tr><td><strong>Cómo se arma la frase</strong></td><td>Concordancia y palabras que cambian según el sentido</td><td>porque/por qué, sino/si no</td></tr>
+          <tr><td><strong>La puntuación</strong></td><td>Dónde van las pausas y qué señalan</td><td>coma, dos puntos, punto y coma</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <p>
+      El peso cambia con el grado: en <strong>6° y 7°</strong> mandan las letras y
+      las reglas de acentuación; en <strong>8° y 9°</strong>, la tilde diacrítica y
+      los homófonos (<em>echar/hechar</em>, <em>a ver/haber</em>); en
+      <strong>10° y 11°</strong>, los errores que vienen del habla y no deben pasar
+      al texto escrito (<em>hubieron muchos</em>, <em>pienso de que</em>) y la
+      puntuación del texto largo. La justificación completa está en el estudio de
+      ortografía del proyecto.
+    </p>
+
+    <h3>Material de refuerzo</h3>
+    <p>
+      Debajo de las actividades puede aparecer la sección
+      <strong>«Material de refuerzo»</strong> con los archivos que el docente
+      decidió compartir con el curso: guías, talleres o lecturas de apoyo. Se
+      descargan con un botón.
+    </p>
+    <p>
+      La sección <em>solo aparece si hay algo publicado para ese curso</em>. Si un
+      estudiante no la ve, es porque su docente todavía no ha entregado material a
+      su grado, no porque esté fallando.
     </p>
 
     <h3>Puntos, niveles y racha</h3>
@@ -836,6 +898,13 @@
         porcentaje general.
       </p>
       <p>
+        Al lado está <strong>«Ortografía por foco»</strong>, que hace lo mismo con el
+        módulo Escribir sin errores: muestra por separado el acierto en
+        <strong>letras</strong>, <strong>tildes</strong>, <strong>gramática</strong> y
+        <strong>puntuación</strong>. Si el curso va bien en letras pero mal en tildes,
+        se ve de una vez y se sabe qué reforzar en la clase siguiente.
+      </p>
+      <p>
         Desde aquí también se descargan los reportes en <strong>CSV</strong> (para
         abrir en Excel) y en <strong>PDF</strong> (para imprimir o adjuntar), y se
         restablecen contraseñas.
@@ -847,8 +916,28 @@
       <p>
         Permite subir material del colegio —PDF, Word o texto— como planes de área,
         guías o lecturas. Al subirlo, la plataforma extrae su texto y lo usa para
-        alimentar al asistente. Los documentos son privados: los estudiantes no
-        tienen acceso a esta sección.
+        alimentar al asistente.
+      </p>
+      <p>
+        <strong>Los documentos son privados por defecto:</strong> solo los ven
+        docentes y administración. Esto es a propósito, porque en esta misma
+        sección se guardan rúbricas y material de evaluación que no debería llegar
+        a los estudiantes. Subir un archivo nunca lo publica.
+      </p>
+      <p>
+        Para <strong>entregarle un archivo a los estudiantes</strong> hay dos
+        caminos. Al subirlo, marcando la casilla
+        <em>«Entregárselo a los estudiantes como material de refuerzo»</em> y
+        eligiendo los cursos. O después, con el botón <strong>Cambiar</strong> de la
+        columna <em>Estudiantes</em>: se marcan los cursos que deben verlo y se
+        pulsa <strong>Publicar a los estudiantes</strong>. Hay que elegir al menos
+        un curso, para que nadie publique por accidente a grados que no le
+        corresponden.
+      </p>
+      <p>
+        La columna <em>Estudiantes</em> muestra en todo momento el estado de cada
+        archivo: <strong>«Solo docentes»</strong> o los cursos que lo están viendo.
+        Con <strong>Quitar de los estudiantes</strong> vuelve a ser privado.
       </p>
     </div>
 
@@ -883,11 +972,36 @@
     <div class="funcion">
       <h4>✏️ Editar actividades</h4>
       <p>
-        Permite corregir las actividades ya publicadas: <strong>editar</strong> su
-        texto, preguntas o respuestas; <strong>reordenarlas</strong> para cambiar en
-        qué orden las ven los estudiantes; o <strong>eliminarlas</strong>. Útil para
-        arreglar una errata o retirar una lectura que no funcionó en clase.
+        Permite <strong>crear</strong> actividades nuevas y manejar las que ya están
+        publicadas: <strong>editar</strong> su texto, preguntas o respuestas;
+        <strong>reordenarlas</strong> con las flechas ↑ ↓ para cambiar en qué orden
+        las ven los estudiantes; o <strong>eliminarlas</strong>.
       </p>
+      <p>
+        Para crear una: se elige el <strong>curso</strong> y el <strong>módulo</strong>
+        arriba, se pulsa <strong>+ Nueva actividad</strong> y se llena el formulario.
+        Cambia según el módulo —en Escribir sin errores pide además qué practica
+        (letras, tildes, gramática o puntuación); en Comprensión, el texto y el tipo
+        de pregunta; en Fluidez, la lectura y la meta de palabras por minuto—.
+      </p>
+      <p>
+        La actividad creada aquí <strong>se publica de inmediato</strong> a los
+        estudiantes de ese curso y queda de última en la lista; si debe ir antes, se
+        sube con las flechas. Es la diferencia con «Actividades con IA», donde la
+        propuesta espera aprobación.
+      </p>
+      <div class="aviso consejo">
+        <span class="simbolo">💡</span>
+        <div>
+          <span class="rotulo">No olvides marcar la respuesta correcta</span>
+          <p>
+            Se marca con el <strong>círculo de selección</strong> que está a la
+            izquierda de cada opción. Si no se marca ninguno, la plataforma avisa y
+            no deja guardar: una actividad sin respuesta correcta nunca podría
+            contestarse bien.
+          </p>
+        </div>
+      </div>
     </div>
 
     <h3>Crear la cuenta de un estudiante</h3>
@@ -978,6 +1092,7 @@
         </thead>
         <tbody>
           <tr><td>🔤 Reconocer palabras</td><td class="num">20</td><td>Ejercicio breve de reconocimiento</td></tr>
+          <tr><td>✍️ Escribir sin errores</td><td class="num">20</td><td>Ejercicio breve de escritura correcta</td></tr>
           <tr><td>📖 Comprensión lectora</td><td class="num">20</td><td>Requiere leer y razonar sobre el texto</td></tr>
           <tr><td>⏱️ Fluidez lectora</td><td class="num">30</td><td>Exige leer en voz alta contra el reloj</td></tr>
         </tbody>
@@ -1017,15 +1132,17 @@
         </thead>
         <tbody>
           <tr><td>Grados atendidos</td><td class="num">6 (de 6° a 11°)</td></tr>
-          <tr><td>Módulos por grado</td><td class="num">3</td></tr>
+          <tr><td>Módulos por grado</td><td class="num">4</td></tr>
           <tr><td>Actividades por módulo</td><td class="num">8</td></tr>
-          <tr><td><strong>Total de actividades</strong></td><td class="num"><strong>144</strong></td></tr>
+          <tr><td>Actividades por grado</td><td class="num">32</td></tr>
+          <tr><td><strong>Total de actividades</strong></td><td class="num"><strong>192</strong></td></tr>
         </tbody>
       </table>
     </div>
     <p>
-      A ese banco base se le pueden sumar las actividades nuevas que el docente
-      apruebe desde la pestaña de actividades con IA.
+      A ese banco base se le pueden sumar las actividades que el docente cree a mano
+      desde «Editar actividades» o las que apruebe desde la pestaña de actividades
+      con IA.
     </p>
   </section>
 
@@ -1043,11 +1160,12 @@
       <div>
         <span class="rotulo">Revisar el contenido</span>
         <p>
-          Las 144 actividades se redactaron con apoyo de inteligencia artificial
-          siguiendo los estándares del MEN, pero <strong>deben ser revisadas por las
-          autoras del proyecto o por la docente</strong> antes de usarse en un salón
-          real. La pestaña «Editar actividades» permite corregir cualquier cosa que
-          no encaje.
+          Las 192 actividades se redactaron con apoyo de inteligencia artificial
+          siguiendo los estándares del MEN —y, en el módulo de ortografía, la
+          Ortografía de la RAE—, pero <strong>deben ser revisadas por las autoras
+          del proyecto o por la docente</strong> antes de usarse en un salón real.
+          La pestaña «Editar actividades» permite corregir cualquier cosa que no
+          encaje, sin necesidad de tocar el código.
         </p>
       </div>
     </div>

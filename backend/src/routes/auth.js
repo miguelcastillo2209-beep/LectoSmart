@@ -3,8 +3,11 @@ const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 const prisma = require("../lib/prisma");
 const { normalizarUsuario } = require("../lib/usuario");
+const { limitadorLogin } = require("../middleware/limites");
 
 const router = Router();
+// Todos los logins pasan por el mismo freno de fuerza bruta.
+router.use(limitadorLogin);
 
 function firmarToken(payload) {
   return jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: "7d" });

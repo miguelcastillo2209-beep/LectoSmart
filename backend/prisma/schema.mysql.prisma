@@ -28,6 +28,9 @@ model Estudiante {
 
   intentos Intento[]
   logros   EstudianteLogro[]
+
+  // El panel del docente y el ranking filtran por curso en cada carga.
+  @@index([curso])
 }
 
 model Docente {
@@ -125,6 +128,9 @@ model Documento {
   mimeType      String
   tamano        Int
   descripcion   String?
+  // Ver schema.prisma: material de refuerzo visible para los estudiantes.
+  visibleParaEstudiantes Boolean @default(false)
+  cursos        String   @default("[]")
   textoExtraido String?  @db.LongText
   subidoPor     String
   createdAt     DateTime @default(now())

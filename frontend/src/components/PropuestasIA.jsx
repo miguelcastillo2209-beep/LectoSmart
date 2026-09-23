@@ -4,9 +4,18 @@ import { apiFetch } from "../api/client";
 
 const MODULOS = [
   { valor: "PALABRAS", etiqueta: "Reconocer palabras" },
+  { valor: "ORTOGRAFIA", etiqueta: "Escribir sin errores" },
   { valor: "COMPRENSION", etiqueta: "Comprensión lectora" },
   { valor: "FLUIDEZ", etiqueta: "Fluidez lectora" },
 ];
+
+// Etiquetas de backend/src/lib/focosOrtografia.js, solo para mostrar.
+const ETIQUETA_FOCO = {
+  letras: "Letras (b/v, s/c/z, g/j, h)",
+  tildes: "Tildes y acentuación",
+  gramatica: "Gramática y concordancia",
+  puntuacion: "Puntuación",
+};
 
 // Genera actividades candidatas con IA (a partir de los documentos
 // subidos y el enfoque pedagógico del curso), y permite al docente
@@ -199,6 +208,11 @@ function TarjetaPropuesta({ propuesta, onAprobar, onRechazar, onRegenerar, onUna
             {propuesta.basadaEnDocumentos && (
               <span className="text-xs font-bold px-2 py-0.5 rounded-full" style={{ background: C.azulSuave, color: C.azul }}>
                 📎 puede estar basada en tus documentos
+              </span>
+            )}
+            {c.foco && (
+              <span className="text-xs font-bold px-2 py-0.5 rounded-full" style={{ background: C.coralSuave, color: "#C2453B" }}>
+                {ETIQUETA_FOCO[c.foco] ?? c.foco}
               </span>
             )}
             <span className="text-xs" style={{ color: C.gris }}>por {propuesta.creadaPor}</span>

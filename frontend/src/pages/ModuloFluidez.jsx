@@ -4,6 +4,7 @@ import { C } from "../theme/colors";
 import { AppHeader } from "../components/AppHeader";
 import { BarraProgresoActividad } from "../components/BarraProgresoActividad";
 import { SinCorazones } from "../components/SinCorazones";
+import { LeccionCompletada } from "../components/LeccionCompletada";
 import { apiFetch } from "../api/client";
 
 const CORAZONES_INICIALES = 2;
@@ -30,6 +31,10 @@ export default function ModuloFluidez() {
   const [vidas, setVidas] = useState(CORAZONES_INICIALES);
   const [sinCorazones, setSinCorazones] = useState(false);
   const [enRepaso, setEnRepaso] = useState(false);
+  // Resultado de ESTA pasada por la lección (se reinicia al repetirla).
+  const [aciertos, setAciertos] = useState(0);
+  const [puntosRonda, setPuntosRonda] = useState(0);
+  const [completada, setCompletada] = useState(false);
   const [error, setError] = useState(null);
 
   // Verificación de voz opcional (ver consentimiento en la UI): nunca
@@ -136,7 +141,12 @@ export default function ModuloFluidez() {
         body: { tiempoSegundos },
         onUnauthorized: irAIngreso,
       });
-      if (!data.correcto) setVidas((v) => Math.max(0, v - 1));
+      if (!data.correcto) {
+        setVidas((v) => Math.max(0, v - 1));
+      } else {
+        setAciertos((a) => a + 1);
+        setPuntosRonda((p) => p + data.puntosGanados);
+      }
       const metadata = JSON.parse(data.metadata ?? "null");
       setResultado({ ...data, tiempoSegundos, ppm: metadata?.ppm });
     } catch (err) {
@@ -171,7 +181,20 @@ export default function ModuloFluidez() {
     }
     const siguiente = lista.find((a) => a.orden > actividad.orden);
     if (siguiente) navigate(`/fluidez/${siguiente.id}`);
-    else navigate("/panel");
+    else setCompletada(true);
+  };
+
+  // Repetir desde la primera lectura. El componente no se desmonta al
+  // cambiar de :id (solo cambia el parámetro), así que hay que reiniciar
+  // a mano el marcador de la ronda.
+  const repetir = () => {
+    setCompletada(false);
+    setVidas(CORAZONES_INICIALES);
+    setAciertos(0);
+    setPuntosRonda(0);
+    setResultado(null);
+    setEstado("antes");
+    if (lista.length > 0) navigate(`/fluidez/${lista[0].id}`);
   };
 
   // Repaso (recuperar corazón): vuelve a leer el MISMO texto una vez
@@ -207,6 +230,19 @@ export default function ModuloFluidez() {
         <AppHeader right={null} />
         <p className="ls-body text-center mt-10" style={{ color: C.gris }}>Cargando actividad…</p>
       </div>
+    );
+  }
+
+  if (completada) {
+    return (
+      <LeccionCompletada
+        modulo="Fluidez lectora"
+        aciertos={aciertos}
+        total={lista.length}
+        puntos={puntosRonda}
+        onRepetir={repetir}
+        onVolver={() => navigate("/panel")}
+      />
     );
   }
 

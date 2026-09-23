@@ -6,10 +6,39 @@ const fs = require("fs/promises");
 const prisma = require("../lib/prisma");
 const { verifyToken, requireRole } = require("../middleware/auth");
 const { extraerTexto } = require("../services/extraerTexto");
+const { estudianteActual } = require("../lib/estudianteActual");
+const { CURSOS } = require("../lib/constants");
 
 const router = Router();
-// Solo docentes y administradores: los estudiantes no ven estas rutas.
-router.use(verifyToken, requireRole("docente", "administrador"));
+// Toda ruta exige sesión. Gestionar documentos (subir, publicar, borrar)
+// sigue siendo de docentes y administradores; el estudiante solo llega a
+// los que se marcaron como material de refuerzo para su curso.
+router.use(verifyToken);
+
+const soloCuerpoDocente = requireRole("docente", "administrador");
+
+// Los cursos se guardan como JSON-string (mismo patrón que
+// Docente.cursosAsignados). Un arreglo vacío significa "todos los cursos".
+function cursosDe(documento) {
+  try {
+    const lista = JSON.parse(documento.cursos);
+    return Array.isArray(lista) ? lista : [];
+  } catch {
+    return [];
+  }
+}
+
+function esParaCurso(documento, curso) {
+  const cursos = cursosDe(documento);
+  return cursos.length === 0 || cursos.includes(curso);
+}
+
+// Normaliza lo que llega del cliente a una lista de cursos válidos, sin
+// repetidos y en el orden oficial de CURSOS.
+function normalizarCursos(valor) {
+  const lista = Array.isArray(valor) ? valor : [];
+  return CURSOS.filter((c) => lista.includes(c));
+}
 
 // Los archivos viven fuera de la carpeta pública del frontend; solo se
 // sirven a través del endpoint autenticado de descarga.
@@ -47,7 +76,7 @@ const upload = multer({
   },
 });
 
-router.get("/", async (_req, res) => {
+router.get("/", soloCuerpoDocente, async (_req, res) => {
   const documentos = await prisma.documento.findMany({
     orderBy: { createdAt: "desc" },
     select: {
@@ -58,6 +87,8 @@ router.get("/", async (_req, res) => {
       descripcion: true,
       subidoPor: true,
       createdAt: true,
+      visibleParaEstudiantes: true,
+      cursos: true,
     },
   });
   // No mandamos textoExtraido al listado (puede ser enorme); solo
@@ -67,10 +98,50 @@ router.get("/", async (_req, res) => {
     select: { id: true },
   });
   const idsConTexto = new Set(conTexto.map((d) => d.id));
-  res.json(documentos.map((d) => ({ ...d, legibleParaIA: idsConTexto.has(d.id) })));
+  res.json(
+    documentos.map((d) => ({
+      ...d,
+      cursos: cursosDe(d),
+      legibleParaIA: idsConTexto.has(d.id),
+    }))
+  );
 });
 
-router.post("/", (req, res) => {
+// Material de refuerzo del estudiante: solo los documentos publicados
+// para su curso. Nunca expone quién lo subió ni el texto extraído.
+router.get("/mios", requireRole("estudiante"), async (req, res) => {
+  const estudiante = await estudianteActual(req, res);
+  if (!estudiante) return;
+
+  const documentos = await prisma.documento.findMany({
+    where: { visibleParaEstudiantes: true },
+    orderBy: { createdAt: "desc" },
+    select: {
+      id: true,
+      nombre: true,
+      mimeType: true,
+      tamano: true,
+      descripcion: true,
+      cursos: true,
+      createdAt: true,
+    },
+  });
+
+  res.json(
+    documentos
+      .filter((d) => esParaCurso(d, estudiante.curso))
+      .map((d) => ({
+        id: d.id,
+        nombre: d.nombre,
+        mimeType: d.mimeType,
+        tamano: d.tamano,
+        descripcion: d.descripcion,
+        createdAt: d.createdAt,
+      }))
+  );
+});
+
+router.post("/", soloCuerpoDocente, (req, res) => {
   upload.single("archivo")(req, res, async (err) => {
     if (err) {
       const mensaje =
@@ -87,6 +158,16 @@ router.post("/", (req, res) => {
 
     const textoExtraido = await extraerTexto(req.file.path, req.file.mimetype, nombreOriginal);
 
+    // En multipart todo llega como texto: el checkbox viaja como "true".
+    // Los cursos vienen como JSON-string desde el formulario.
+    const visibleParaEstudiantes = req.body.visibleParaEstudiantes === "true";
+    let cursos = [];
+    try {
+      cursos = normalizarCursos(JSON.parse(req.body.cursos || "[]"));
+    } catch {
+      cursos = [];
+    }
+
     const documento = await prisma.documento.create({
       data: {
         nombre: nombreOriginal,
@@ -94,6 +175,8 @@ router.post("/", (req, res) => {
         mimeType: req.file.mimetype,
         tamano: req.file.size,
         descripcion: req.body.descripcion?.trim() || null,
+        visibleParaEstudiantes,
+        cursos: JSON.stringify(cursos),
         textoExtraido,
         subidoPor: req.usuario.rol === "administrador" ? "Administración" : (req.body.subidoPor || "Docente"),
       },
@@ -102,14 +185,45 @@ router.post("/", (req, res) => {
     res.status(201).json({
       id: documento.id,
       nombre: documento.nombre,
+      visibleParaEstudiantes: documento.visibleParaEstudiantes,
       legibleParaIA: textoExtraido !== null,
     });
   });
 });
 
+// Publicar/despublicar un documento como material de refuerzo y elegir a
+// qué cursos llega (lista vacía = a todos).
+router.patch("/:id/visibilidad", soloCuerpoDocente, async (req, res) => {
+  const documento = await prisma.documento.findUnique({ where: { id: req.params.id } });
+  if (!documento) return res.status(404).json({ error: "Documento no encontrado" });
+
+  const visibleParaEstudiantes = Boolean(req.body?.visibleParaEstudiantes);
+  const cursos = normalizarCursos(req.body?.cursos);
+
+  const actualizado = await prisma.documento.update({
+    where: { id: documento.id },
+    data: { visibleParaEstudiantes, cursos: JSON.stringify(cursos) },
+    select: { id: true, visibleParaEstudiantes: true, cursos: true },
+  });
+
+  res.json({ ...actualizado, cursos: cursosDe(actualizado) });
+});
+
+// Descarga autenticada. El estudiante solo pasa si el documento está
+// publicado como refuerzo Y es de su curso: sin esta comprobación, tener
+// el id de cualquier documento (incluidas rúbricas o exámenes) bastaría
+// para bajarlo.
 router.get("/:id/descargar", async (req, res) => {
   const documento = await prisma.documento.findUnique({ where: { id: req.params.id } });
   if (!documento) return res.status(404).json({ error: "Documento no encontrado" });
+
+  if (req.usuario.rol === "estudiante") {
+    const estudiante = await estudianteActual(req, res);
+    if (!estudiante) return;
+    if (!documento.visibleParaEstudiantes || !esParaCurso(documento, estudiante.curso)) {
+      return res.status(403).json({ error: "Este documento no está disponible para tu curso" });
+    }
+  }
 
   const ruta = path.join(CARPETA_UPLOADS, documento.archivo);
   res.download(ruta, documento.nombre, (err) => {
@@ -119,7 +233,7 @@ router.get("/:id/descargar", async (req, res) => {
   });
 });
 
-router.delete("/:id", async (req, res) => {
+router.delete("/:id", soloCuerpoDocente, async (req, res) => {
   const documento = await prisma.documento.findUnique({ where: { id: req.params.id } });
   if (!documento) return res.status(404).json({ error: "Documento no encontrado" });
 

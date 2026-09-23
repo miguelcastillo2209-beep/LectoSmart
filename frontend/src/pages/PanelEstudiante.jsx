@@ -5,15 +5,22 @@ import { Leo } from "../components/Leo";
 import { AppHeader } from "../components/AppHeader";
 import { apiFetch } from "../api/client";
 import { useAuth } from "../context/AuthContext";
+import MaterialesEstudiante from "../components/MaterialesEstudiante";
 
+// El orden de este objeto es el orden de las tarjetas y el de las
+// peticiones que se hacen al cargar el panel.
 const MODULOS_INFO = {
   PALABRAS: { titulo: "Reconocer palabras", icono: "🔤", color: C.azul, suave: C.azulSuave, ruta: "palabras" },
+  ORTOGRAFIA: { titulo: "Escribir sin errores", icono: "✍️", color: C.coral, suave: C.coralSuave, ruta: "ortografia" },
   COMPRENSION: { titulo: "Comprensión lectora", icono: "📖", color: C.verde, suave: C.verdeSuave, ruta: "comprension" },
   FLUIDEZ: { titulo: "Fluidez lectora", icono: "⏱️", color: C.morado, suave: C.moradoSuave, ruta: "fluidez" },
 };
 
+// Siguiente actividad pendiente. Si ya están todas completadas, se
+// devuelve la PRIMERA: el botón de la tarjeta dice "Repasar" y lo que se
+// espera es rehacer la lección entera, no caer en la última pregunta.
 function elegirSiguiente(lista) {
-  return lista.find((a) => !a.completada) ?? lista[lista.length - 1];
+  return lista.find((a) => !a.completada) ?? lista[0];
 }
 
 export default function PanelEstudiante() {
@@ -21,6 +28,7 @@ export default function PanelEstudiante() {
   const navigate = useNavigate();
   const [datos, setDatos] = useState(null);
   const [siguientePorModulo, setSiguientePorModulo] = useState({});
+  const [totalMateriales, setTotalMateriales] = useState(0);
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState(null);
 
@@ -29,19 +37,18 @@ export default function PanelEstudiante() {
     async function cargar() {
       try {
         const irAIngreso = () => navigate("/ingreso");
-        const [me, palabras, comprension, fluidez] = await Promise.all([
+        const modulos = Object.keys(MODULOS_INFO);
+        const [me, ...listas] = await Promise.all([
           apiFetch("/estudiantes/me", { onUnauthorized: irAIngreso }),
-          apiFetch("/modulos/PALABRAS/actividades", { onUnauthorized: irAIngreso }),
-          apiFetch("/modulos/COMPRENSION/actividades", { onUnauthorized: irAIngreso }),
-          apiFetch("/modulos/FLUIDEZ/actividades", { onUnauthorized: irAIngreso }),
+          ...modulos.map((modulo) =>
+            apiFetch(`/modulos/${modulo}/actividades`, { onUnauthorized: irAIngreso })
+          ),
         ]);
         if (!activo) return;
         setDatos(me);
-        setSiguientePorModulo({
-          PALABRAS: elegirSiguiente(palabras),
-          COMPRENSION: elegirSiguiente(comprension),
-          FLUIDEZ: elegirSiguiente(fluidez),
-        });
+        setSiguientePorModulo(
+          Object.fromEntries(modulos.map((modulo, i) => [modulo, elegirSiguiente(listas[i])]))
+        );
       } catch (err) {
         if (activo) setError(err.message || "No se pudo cargar tu progreso");
       } finally {
@@ -131,8 +138,8 @@ export default function PanelEstudiante() {
         </div>
 
         <h2 className="ls-display text-2xl font-bold mt-10 mb-5" style={{ color: C.tinta }}>Tus actividades</h2>
-        <div className="grid md:grid-cols-3 gap-5">
-          {datos.progresoPorModulo.map((m) => {
+        <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-5">
+          {datos.progresoPorModulo.filter((m) => MODULOS_INFO[m.modulo]).map((m) => {
             const info = MODULOS_INFO[m.modulo];
             const siguiente = siguientePorModulo[m.modulo];
             const estado = m.completadas === 0 ? "Aún sin empezar" : `${m.completadas} de ${m.total} completadas`;
@@ -159,6 +166,18 @@ export default function PanelEstudiante() {
             );
           })}
         </div>
+
+        {/* Solo aparece si el docente publicó algún archivo para este curso. */}
+        <h2
+          className="ls-display text-2xl font-bold mt-10 mb-5"
+          style={{ color: C.tinta, display: totalMateriales > 0 ? undefined : "none" }}
+        >
+          Material de refuerzo
+        </h2>
+        <MaterialesEstudiante
+          onUnauthorized={() => navigate("/ingreso")}
+          onCargados={setTotalMateriales}
+        />
 
         <h2 className="ls-display text-2xl font-bold mt-10 mb-5" style={{ color: C.tinta }}>Tus logros</h2>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">

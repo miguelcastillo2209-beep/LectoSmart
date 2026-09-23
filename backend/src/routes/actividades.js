@@ -1,6 +1,7 @@
 const { Router } = require("express");
 const prisma = require("../lib/prisma");
 const { verifyToken, requireRole } = require("../middleware/auth");
+const { limitadorIntentos } = require("../middleware/limites");
 const { MODULOS } = require("../lib/constants");
 const { contenidoPublico } = require("../lib/contenido");
 const { calcularNivel, calcularRacha } = require("../services/puntos");
@@ -61,7 +62,7 @@ router.get("/actividades/:id", verifyToken, requireRole("estudiante"), async (re
   });
 });
 
-router.post("/actividades/:id/intentos", verifyToken, requireRole("estudiante"), async (req, res) => {
+router.post("/actividades/:id/intentos", verifyToken, requireRole("estudiante"), limitadorIntentos, async (req, res) => {
   const [actividad, estudianteAntes] = await Promise.all([
     prisma.actividad.findUnique({ where: { id: req.params.id } }),
     estudianteActual(req, res),

@@ -1,12 +1,15 @@
-/* Fuentes locales (@fontsource) — sin llamadas a Google Fonts */
-@import "@fontsource/baloo-2/500.css";
-@import "@fontsource/baloo-2/600.css";
-@import "@fontsource/baloo-2/700.css";
-@import "@fontsource/baloo-2/800.css";
-@import "@fontsource/inter/400.css";
-@import "@fontsource/inter/500.css";
-@import "@fontsource/inter/600.css";
-@import "@fontsource/inter/700.css";
+/* Fuentes locales (@fontsource) — sin llamadas a Google Fonts.
+   Se importa SOLO el subconjunto latino: los archivos sin sufijo traen
+   además devanagari, vietnamita y latin-ext, que esta app nunca usa y
+   que sumaban ~2 MB al precache del service worker. */
+@import "@fontsource/baloo-2/latin-500.css";
+@import "@fontsource/baloo-2/latin-600.css";
+@import "@fontsource/baloo-2/latin-700.css";
+@import "@fontsource/baloo-2/latin-800.css";
+@import "@fontsource/inter/latin-400.css";
+@import "@fontsource/inter/latin-500.css";
+@import "@fontsource/inter/latin-600.css";
+@import "@fontsource/inter/latin-700.css";
 @import "tailwindcss";
 
 .ls-display {
@@ -42,9 +45,99 @@
   transform: scale(.97);
 }
 
+/* ---------- Animaciones de la lección ----------
+   Inspiradas en la mecánica de Duolingo: botones con borde inferior
+   grueso que se hunden al pulsar, entrada escalonada de las opciones y
+   una reacción clara al acertar o fallar. Son animaciones cortas (menos
+   de medio segundo) para que enganchen sin hacer esperar. */
+
+/* Opción de respuesta con relieve: el borde inferior hace de sombra
+   sólida y se comprime al pulsar, como una tecla física. */
+.ls-opcion {
+  border-bottom-width: 4px !important;
+  transition: transform .08s ease, background .15s ease, border-color .15s ease;
+}
+.ls-opcion:not(:disabled):hover {
+  transform: translateY(-1px);
+}
+.ls-opcion:not(:disabled):active {
+  transform: translateY(2px);
+  border-bottom-width: 2px !important;
+}
+
+/* Entrada de la pregunta y de cada opción. El escalonado se controla
+   desde el componente con la variable --retraso. */
+@keyframes ls-entrada {
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.ls-entra {
+  animation: ls-entrada .34s cubic-bezier(.22, 1, .36, 1) both;
+  animation-delay: var(--retraso, 0ms);
+}
+
+/* Acierto: un pequeño rebote. Fallo: negación con la cabeza. */
+@keyframes ls-acierto {
+  0%   { transform: scale(1); }
+  45%  { transform: scale(1.035); }
+  100% { transform: scale(1); }
+}
+.ls-acierto { animation: ls-acierto .38s ease-out; }
+
+@keyframes ls-fallo {
+  0%, 100% { transform: translateX(0); }
+  20%      { transform: translateX(-7px); }
+  40%      { transform: translateX(6px); }
+  60%      { transform: translateX(-4px); }
+  80%      { transform: translateX(2px); }
+}
+.ls-fallo { animation: ls-fallo .42s ease-in-out; }
+
+/* Panel de retroalimentación: sube desde abajo, como la bandeja de
+   Duolingo cuando respondes. */
+@keyframes ls-sube {
+  from { opacity: 0; transform: translateY(16px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.ls-sube { animation: ls-sube .3s cubic-bezier(.22, 1, .36, 1) both; }
+
+/* Corazón que se pierde: un latido rojo antes de quedarse quieto. */
+@keyframes ls-latido {
+  0%, 100% { transform: scale(1); }
+  30%      { transform: scale(1.28); }
+  60%      { transform: scale(.94); }
+}
+.ls-latido { animation: ls-latido .5s ease-in-out; }
+
+/* La barra de progreso se desliza en vez de saltar. */
+.ls-barra-progreso {
+  transition: width .5s cubic-bezier(.22, 1, .36, 1);
+}
+
+/* Celebración al terminar la lección. */
+@keyframes ls-celebra {
+  0%   { opacity: 0; transform: scale(.7) rotate(-8deg); }
+  60%  { transform: scale(1.08) rotate(3deg); }
+  100% { opacity: 1; transform: scale(1) rotate(0); }
+}
+.ls-celebra { animation: ls-celebra .6s cubic-bezier(.22, 1, .36, 1) both; }
+
 @media (prefers-reduced-motion: reduce) {
-  .ls-card, .ls-btn {
+  .ls-card, .ls-btn, .ls-opcion, .ls-barra-progreso {
     transition: none;
+  }
+  /* Nada de movimiento, pero los elementos deben quedar visibles: las
+     animaciones de entrada usan "both", así que sin esto se quedarían
+     con la opacidad del fotograma inicial. */
+  .ls-entra, .ls-sube, .ls-celebra,
+  .ls-acierto, .ls-fallo, .ls-latido {
+    animation: none;
+    opacity: 1;
+    transform: none;
+  }
+  .ls-opcion:not(:disabled):hover,
+  .ls-opcion:not(:disabled):active {
+    transform: none;
   }
 }
 

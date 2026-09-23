@@ -8,6 +8,7 @@ const { cursosPermitidosPara } = require("../lib/cursosDocente");
 const { generarPasswordTemporal } = require("../lib/passwordTemporal");
 const { normalizarUsuario } = require("../lib/usuario");
 const { CURSOS } = require("../lib/constants");
+const { FOCOS_ORTOGRAFIA, FOCO_POR_DEFECTO } = require("../lib/focosOrtografia");
 
 const router = Router();
 router.use(verifyToken, requireRole("docente", "administrador"));
@@ -16,38 +17,65 @@ const UMBRAL_REFUERZO = 50;
 
 const NIVELES_COMPRENSION = ["literal", "inferencial", "critico"];
 
-// Devuelve las filas de progreso por estudiante Y el desglose de
+// Devuelve las filas de progreso por estudiante Y dos desgloses: los
 // aciertos de COMPRENSION por nivel de lectura (literal/inferencial/
-// crítico), leído de Actividad.contenido.nivel — así el docente ve en
-// qué habilidad específica falla más su grupo, no solo un % global.
+// crítico) y los de ORTOGRAFIA por foco (letras/tildes/gramática/
+// puntuación), leídos de Actividad.contenido. Así el docente ve en qué
+// habilidad específica falla su grupo, no solo un % global.
 async function construirResumenEstudiantes(cursosPermitidos) {
-  const [estudiantes, intentos] = await Promise.all([
-    prisma.estudiante.findMany({
-      where: cursosPermitidos ? { curso: { in: cursosPermitidos } } : undefined,
-    }),
+  const estudiantes = await prisma.estudiante.findMany({
+    where: cursosPermitidos ? { curso: { in: cursosPermitidos } } : undefined,
+  });
+
+  // Rendimiento: antes esto traía la tabla Intento COMPLETA y, con el
+  // join, repetía el `contenido` (textos largos) en cada fila — con un
+  // colegio lleno son decenas de MB por cada carga del panel. Ahora los
+  // intentos van filtrados por los estudiantes que el docente puede ver
+  // y sin join; las actividades se traen una sola vez (son ~200 filas) y
+  // se cruzan en memoria.
+  const [intentos, actividades] = await Promise.all([
     prisma.intento.findMany({
-      select: { estudianteId: true, actividadId: true, correcto: true, actividad: { select: { modulo: true, contenido: true } } },
+      where: { estudianteId: { in: estudiantes.map((e) => e.id) } },
+      select: { estudianteId: true, actividadId: true, correcto: true },
     }),
+    prisma.actividad.findMany({ select: { id: true, modulo: true, contenido: true } }),
   ]);
+
+  // El JSON de cada actividad se parsea una vez, no una vez por intento.
+  const clasificacion = new Map(
+    actividades.map((a) => {
+      let nivel = "literal";
+      let foco = FOCO_POR_DEFECTO;
+      try {
+        const contenido = JSON.parse(a.contenido);
+        if (NIVELES_COMPRENSION.includes(contenido.nivel)) nivel = contenido.nivel;
+        if (FOCOS_ORTOGRAFIA.includes(contenido.foco)) foco = contenido.foco;
+      } catch {}
+      return [a.id, { modulo: a.modulo, nivel, foco }];
+    })
+  );
 
   const porEstudiante = new Map(estudiantes.map((e) => [e.id, { actividadesCompletadas: new Set(), comprensionCorrectos: 0, comprensionTotal: 0 }]));
   const desglose = Object.fromEntries(NIVELES_COMPRENSION.map((n) => [n, { correctos: 0, total: 0 }]));
+  const desgloseOrtografia = Object.fromEntries(FOCOS_ORTOGRAFIA.map((f) => [f, { correctos: 0, total: 0 }]));
 
   for (const intento of intentos) {
     const stats = porEstudiante.get(intento.estudianteId);
     if (!stats) continue; // estudiante fuera de los cursos permitidos de este docente
+    const actividad = clasificacion.get(intento.actividadId);
+    if (!actividad) continue; // actividad eliminada después del intento
     if (intento.correcto) stats.actividadesCompletadas.add(intento.actividadId);
-    if (intento.actividad.modulo === "COMPRENSION") {
+
+    if (actividad.modulo === "ORTOGRAFIA") {
+      desgloseOrtografia[actividad.foco].total += 1;
+      if (intento.correcto) desgloseOrtografia[actividad.foco].correctos += 1;
+    }
+
+    if (actividad.modulo === "COMPRENSION") {
       stats.comprensionTotal += 1;
       if (intento.correcto) stats.comprensionCorrectos += 1;
-
-      let nivel = "literal";
-      try {
-        const contenido = JSON.parse(intento.actividad.contenido);
-        if (NIVELES_COMPRENSION.includes(contenido.nivel)) nivel = contenido.nivel;
-      } catch {}
-      desglose[nivel].total += 1;
-      if (intento.correcto) desglose[nivel].correctos += 1;
+      desglose[actividad.nivel].total += 1;
+      if (intento.correcto) desglose[actividad.nivel].correctos += 1;
     }
   }
 
@@ -74,12 +102,21 @@ async function construirResumenEstudiantes(cursosPermitidos) {
     pct: desglose[nivel].total > 0 ? Math.round((desglose[nivel].correctos / desglose[nivel].total) * 100) : null,
   }));
 
-  return { filas, desglosePorNivel };
+  const desglosePorFoco = FOCOS_ORTOGRAFIA.map((foco) => ({
+    foco,
+    correctos: desgloseOrtografia[foco].correctos,
+    total: desgloseOrtografia[foco].total,
+    pct: desgloseOrtografia[foco].total > 0
+      ? Math.round((desgloseOrtografia[foco].correctos / desgloseOrtografia[foco].total) * 100)
+      : null,
+  }));
+
+  return { filas, desglosePorNivel, desglosePorFoco };
 }
 
 router.get("/resumen", async (req, res) => {
   const cursosPermitidos = await cursosPermitidosPara(prisma, req.usuario);
-  const { filas, desglosePorNivel } = await construirResumenEstudiantes(cursosPermitidos);
+  const { filas, desglosePorNivel, desglosePorFoco } = await construirResumenEstudiantes(cursosPermitidos);
 
   const activos = filas.filter((f) => f.tieneActividad);
   const actividadesCompletadas = filas.reduce((suma, f) => suma + f.actividades, 0);
@@ -93,6 +130,7 @@ router.get("/resumen", async (req, res) => {
     comprensionPromedio,
     necesitanRefuerzo,
     desglosePorNivel,
+    desglosePorFoco,
   });
 });
 

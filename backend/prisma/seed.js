@@ -1,6 +1,7 @@
 const bcrypt = require("bcrypt");
 const { PrismaClient } = require("@prisma/client");
 const { PUNTOS_BASE_POR_MODULO } = require("../src/lib/constants");
+const { BANCO_ORTOGRAFIA } = require("./bancoOrtografia");
 
 const prisma = new PrismaClient();
 
@@ -1879,7 +1880,10 @@ async function main() {
   const puntosBasePorModulo = PUNTOS_BASE_POR_MODULO;
 
   for (const [curso, modulos] of Object.entries(BANCO)) {
-    for (const [modulo, items] of Object.entries(modulos)) {
+    // ORTOGRAFIA vive en bancoOrtografia.js (se redactó después y el
+    // archivo ya era enorme), pero se siembra igual que los demás.
+    const modulosDelCurso = { ...modulos, ORTOGRAFIA: BANCO_ORTOGRAFIA[curso] ?? [] };
+    for (const [modulo, items] of Object.entries(modulosDelCurso)) {
       for (let i = 0; i < items.length; i++) {
         const item = items[i];
         const orden = i + 1;
@@ -1921,6 +1925,7 @@ async function crearVistasLegibles() {
   const moduloLegible = (columna) => `
     CASE ${columna}
       WHEN 'PALABRAS' THEN 'Reconocer palabras'
+      WHEN 'ORTOGRAFIA' THEN 'Escribir sin errores'
       WHEN 'COMPRENSION' THEN 'Comprensión lectora'
       WHEN 'FLUIDEZ' THEN 'Fluidez lectora'
       ELSE ${columna}

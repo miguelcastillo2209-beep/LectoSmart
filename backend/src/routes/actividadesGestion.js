@@ -2,10 +2,11 @@ const { Router } = require("express");
 const prisma = require("../lib/prisma");
 const { verifyToken, requireRole } = require("../middleware/auth");
 const { cursosPermitidosPara } = require("../lib/cursosDocente");
-const { MODULOS, CURSOS } = require("../lib/constants");
+const { MODULOS, CURSOS, PUNTOS_BASE_POR_MODULO } = require("../lib/constants");
+const { FOCOS_ORTOGRAFIA, normalizarFoco } = require("../lib/focosOrtografia");
 
 const router = Router();
-// Gestión (editar/reordenar/eliminar) de actividades YA publicadas.
+// Gestión (crear/editar/reordenar/eliminar) de actividades publicadas.
 // A diferencia de las rutas de estudiante, aquí sí se devuelve el
 // contenido completo (incluida la respuesta correcta) — es exclusivo de
 // docente/admin.
@@ -31,6 +32,14 @@ function validarContenido(modulo, contenido) {
     if (!opciones.includes(respuesta)) return "La respuesta debe ser igual a una de las opciones";
     return null;
   }
+  if (modulo === "ORTOGRAFIA") {
+    const { instruccion, opciones, respuesta, foco } = contenido || {};
+    if (!instruccion?.trim()) return "Falta la instrucción";
+    if (!Array.isArray(opciones) || opciones.length < 2) return "Debe haber al menos 2 opciones";
+    if (!opciones.includes(respuesta)) return "La respuesta debe ser igual a una de las opciones";
+    if (foco && !FOCOS_ORTOGRAFIA.includes(foco)) return "Foco de ortografía inválido";
+    return null;
+  }
   if (modulo === "COMPRENSION") {
     const { texto, pregunta, opciones, respuesta, nivel } = contenido || {};
     if (!texto?.trim()) return "Falta el texto";
@@ -46,6 +55,21 @@ function validarContenido(modulo, contenido) {
   if (texto.trim().split(/\s+/).length < 20) return "El texto es demasiado corto";
   if (!ppmObjetivo || ppmObjetivo <= 0) return "La meta de ppm debe ser un número mayor a 0";
   return null;
+}
+
+// Ajustes que se hacen en el servidor y nunca se toman del cliente: el
+// conteo de palabras de FLUIDEZ se recalcula del texto real (igual que
+// en el seed y en el generador de IA) y el foco de ORTOGRAFIA se cierra
+// a la lista válida.
+function normalizarContenido(modulo, contenido) {
+  if (modulo === "FLUIDEZ") {
+    const texto = contenido.texto.trim();
+    return { texto, palabras: texto.split(/\s+/).length, ppmObjetivo: Number(contenido.ppmObjetivo) };
+  }
+  if (modulo === "ORTOGRAFIA") {
+    return { ...contenido, foco: normalizarFoco(contenido.foco) };
+  }
+  return contenido;
 }
 
 router.get("/", async (req, res) => {
@@ -65,6 +89,50 @@ router.get("/", async (req, res) => {
   }
 });
 
+// Crear una actividad a mano. A diferencia de las propuestas de IA (que
+// pasan por revisión antes de publicarse), esto publica de una vez para
+// los estudiantes del curso. El orden es el máximo del módulo/curso + 1,
+// igual que al aprobar una propuesta.
+router.post("/", async (req, res) => {
+  const { curso, modulo } = req.body || {};
+  if (!CURSOS.includes(curso)) return res.status(400).json({ error: "Curso inválido" });
+  if (!MODULOS.includes(modulo)) return res.status(400).json({ error: "Módulo inválido" });
+
+  try {
+    await validarAccesoCurso(req.usuario, curso);
+
+    const titulo = String(req.body?.titulo || "").trim();
+    if (!titulo) return res.status(400).json({ error: "Falta el título" });
+
+    const errorContenido = validarContenido(modulo, req.body?.contenido);
+    if (errorContenido) return res.status(400).json({ error: errorContenido });
+
+    const contenido = normalizarContenido(modulo, req.body.contenido);
+
+    const creada = await prisma.$transaction(async (tx) => {
+      const ultima = await tx.actividad.findFirst({
+        where: { modulo, curso },
+        orderBy: { orden: "desc" },
+        select: { orden: true },
+      });
+      return tx.actividad.create({
+        data: {
+          modulo,
+          curso,
+          titulo,
+          contenido: JSON.stringify(contenido),
+          orden: (ultima?.orden ?? 0) + 1,
+          puntosBase: PUNTOS_BASE_POR_MODULO[modulo],
+        },
+      });
+    });
+
+    res.status(201).json({ ...creada, contenido });
+  } catch (err) {
+    res.status(err.status || 500).json({ error: err.message });
+  }
+});
+
 router.put("/:id", async (req, res) => {
   const actividad = await prisma.actividad.findUnique({ where: { id: req.params.id } });
   if (!actividad) return res.status(404).json({ error: "Actividad no encontrada" });
@@ -79,12 +147,7 @@ router.put("/:id", async (req, res) => {
     const errorContenido = validarContenido(actividad.modulo, contenido);
     if (errorContenido) return res.status(400).json({ error: errorContenido });
 
-    // El conteo de palabras de FLUIDEZ nunca se confía al cliente: se
-    // recalcula del texto real, igual que en el seed y en el generador IA.
-    const contenidoFinal =
-      actividad.modulo === "FLUIDEZ"
-        ? { texto: contenido.texto.trim(), palabras: contenido.texto.trim().split(/\s+/).length, ppmObjetivo: Number(contenido.ppmObjetivo) }
-        : contenido;
+    const contenidoFinal = normalizarContenido(actividad.modulo, contenido);
 
     const actualizada = await prisma.actividad.update({
       where: { id: actividad.id },

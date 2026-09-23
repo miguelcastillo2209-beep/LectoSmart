@@ -10,7 +10,7 @@ datasource db {
 // El módulo se guarda como texto simple (no enum) por consistencia con
 // el resto del proyecto; se valida en el código de la aplicación (ver
 // backend/src/lib/constants.js). Valores válidos:
-// "PALABRAS" | "COMPRENSION" | "FLUIDEZ"
+// "PALABRAS" | "COMPRENSION" | "FLUIDEZ" | "ORTOGRAFIA"
 
 model Estudiante {
   id                String    @id @default(cuid())
@@ -25,6 +25,9 @@ model Estudiante {
 
   intentos Intento[]
   logros   EstudianteLogro[]
+
+  // El panel del docente y el ranking filtran por curso en cada carga.
+  @@index([curso])
 }
 
 model Docente {
@@ -62,6 +65,8 @@ model Actividad {
   //  PALABRAS:    { instruccion, opciones: [string], respuesta: string }
   //  COMPRENSION: { texto, pregunta, opciones: [string], respuesta: number }
   //  FLUIDEZ:     { texto, palabras: number, ppmObjetivo: number }
+  //  ORTOGRAFIA:  { instruccion, opciones: [string], respuesta: string, foco }
+  //               (foco: ver backend/src/lib/focosOrtografia.js)
   contenido  String
   orden      Int
   puntosBase Int      @default(20)
@@ -132,10 +137,11 @@ model PropuestaActividad {
   actualizadaEn     DateTime @updatedAt
 }
 
-// Documentos de apoyo que suben docentes/administradores (solo visibles
-// para esos roles). El texto se extrae al subir el archivo y se usa como
-// contexto del asistente IA (RAG) — así no hay que re-procesar el
-// archivo en cada consulta.
+// Documentos de apoyo que suben docentes/administradores. El texto se
+// extrae al subir el archivo y se usa como contexto del asistente IA
+// (RAG) — así no hay que re-procesar el archivo en cada consulta.
+// Por defecto son privados del cuerpo docente; el que quiera entregarse
+// como refuerzo a los estudiantes se marca con visibleParaEstudiantes.
 model Documento {
   id            String   @id @default(cuid())
   nombre        String // nombre original del archivo
@@ -143,6 +149,14 @@ model Documento {
   mimeType      String
   tamano        Int // bytes
   descripcion   String?
+  // Material de refuerzo: si es true, los estudiantes lo ven y lo pueden
+  // descargar desde su panel. Arranca en false a propósito — subir un
+  // archivo no debe publicarlo por accidente (hay guías y rúbricas que
+  // solo son del docente).
+  visibleParaEstudiantes Boolean @default(false)
+  // JSON-string con los cursos que lo ven, ej. '["6°","7°"]' (mismo
+  // patrón que Docente.cursosAsignados). Arreglo vacío = todos los cursos.
+  cursos        String   @default("[]")
   // Texto extraído del archivo (PDF/Word/texto plano) para el asistente
   // IA; null si el formato no permitió extraer texto.
   textoExtraido String?
